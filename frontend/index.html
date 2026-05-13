@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>McAllen Trading Analyst</title>
+<link rel="manifest" href="/manifest.json" />
+<link rel="icon" href="/icon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/icon.svg" />
+<meta name="theme-color" content="#161b22" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="McAllen" />
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: #58a6ff;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+  }
+  .logo span { color: #3fb950; }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    max-width: 380px;
+  }
+
+  #ticker-input {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #e6edf3;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 7px 14px;
+    text-transform: uppercase;
+    width: 130px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #ticker-input:focus { border-color: #58a6ff; }
+  #ticker-input::placeholder { color: #6e7681; font-weight: 400; letter-spacing: 0; }
+
+  #analyze-btn {
+    background: #238636;
+    border: 1px solid #2ea043;
+    border-radius: 6px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 16px;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  #analyze-btn:hover:not(:disabled) { background: #2ea043; }
+  #analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #8b949e;
+    margin-left: 8px;
+  }
+  .spinner {
+    width: 10px; height: 10px;
+    border: 2px solid #30363d;
+    border-top-color: #58a6ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+  }
+  .spinner.active { display: block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .price-info {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+  }
+  .price-tag {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e6edf3;
+  }
+  .change-positive { color: #3fb950; }
+  .change-negative { color: #f85149; }
+
+  /* ── Main layout ── */
+  main {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    flex: 1;
+    overflow: hidden;
+    gap: 0;
+  }
+
+  /* ── Chart panel ── */
+  .chart-panel {
+    background: #0d1117;
+    border-right: 1px solid #30363d;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-header {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  #tv-chart-container {
+    flex: 1;
+  }
+
+  /* ── Analysis panel ── */
+  .analysis-panel {
+    display: flex;
+    flex-direction: column;
+    background: #0d1117;
+    overflow: hidden;
+  }
+
+  .analysis-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    font-size: 13px;
+    line-height: 1.65;
+  }
+
+  .analysis-body::-webkit-scrollbar { width: 4px; }
+  .analysis-body::-webkit-scrollbar-track { background: transparent; }
+  .analysis-body::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+  /* ── Placeholder ── */
+  .placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6e7681;
+    text-align: center;
+    gap: 12px;
+  }
+  .placeholder-icon { font-size: 40px; opacity: 0.4; }
+  .placeholder h3 { font-size: 15px; color: #8b949e; font-weight: 500; }
+  .placeholder p { font-size: 12px; max-width: 260px; }
+
+  /* ── Rendered markdown ── */
+  .analysis-content { display: none; }
+  .analysis-content.visible { display: block; }
+
+  .analysis-content h2 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #58a6ff;
+    margin: 14px 0 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #21262d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .analysis-content p {
+    margin-bottom: 8px;
+    color: #c9d1d9;
+  }
+
+  .analysis-content strong { color: #e6edf3; }
+
+  .analysis-content ul, .analysis-content ol {
+    padding-left: 18px;
+    margin-bottom: 8px;
+  }
+
+  .analysis-content li { margin-bottom: 3px; color: #c9d1d9; }
+
+  .analysis-content hr {
+    border: none;
+    border-top: 1px solid #21262d;
+    margin: 12px 0;
+  }
+
+  .analysis-content em {
+    font-size: 11px;
+    color: #6e7681;
+  }
+
+  .analysis-content code {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 3px;
+    font-size: 11px;
+    padding: 1px 5px;
+  }
+
+  /* ── Verdict badge ── */
+  .verdict-section {
+    padding: 12px 16px;
+    border-top: 1px solid #21262d;
+    display: none;
+  }
+  .verdict-section.visible { display: block; }
+
+  .verdict-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 14px;
+    letter-spacing: 0.3px;
+  }
+  .verdict-bullish {
+    background: rgba(63, 185, 80, 0.15);
+    border: 1px solid rgba(63, 185, 80, 0.4);
+    color: #3fb950;
+  }
+  .verdict-bearish {
+    background: rgba(248, 81, 73, 0.15);
+    border: 1px solid rgba(248, 81, 73, 0.4);
+    color: #f85149;
+  }
+  .verdict-neutral {
+    background: rgba(139, 148, 158, 0.15);
+    border: 1px solid rgba(139, 148, 158, 0.4);
+    color: #8b949e;
+  }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    background: #161b22;
+    border-top: 1px solid #30363d;
+    border-bottom: 1px solid #30363d;
+    padding: 8px 16px;
+    display: none;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .stats-bar.visible { display: flex; }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .stat-label {
+    font-size: 10px; color: #6e7681; text-transform: uppercase;
+    letter-spacing: 0.5px; cursor: help; position: relative;
+    display: inline-block;
+  }
+  .stat-value { font-size: 13px; font-weight: 600; color: #e6edf3; }
+  .stat-value.bullish { color: #3fb950; }
+  .stat-value.bearish { color: #f85149; }
+
+  /* ── Tooltip ── */
+  [data-tip] { position: relative; }
+  [data-tip]::after {
+    content: attr(data-tip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1c2128;
+    border: 1px solid #388bfd55;
+    border-radius: 6px;
+    color: #c9d1d9;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.5;
+    min-width: 200px;
+    max-width: 260px;
+    padding: 8px 10px;
+    pointer-events: none;
+    text-transform: none;
+    white-space: normal;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  }
+  [data-tip]::before {
+    content: "";
+    position: absolute;
+    bottom: calc(100% + 3px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #388bfd55;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 100;
+  }
+  [data-tip]:hover::after,
+  [data-tip]:hover::before { opacity: 1; }
+
+  /* ── Error ── */
+  .error-box {
+    background: rgba(248, 81, 73, 0.1);
+    border: 1px solid rgba(248, 81, 73, 0.3);
+    border-radius: 6px;
+    color: #f85149;
+    font-size: 13px;
+    padding: 10px 14px;
+    margin: 12px;
+    display: none;
+  }
+  .error-box.visible { display: block; }
+
+  /* ── History drawer ── */
+  .history-btn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    color: #8b949e;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 10px;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .history-btn:hover { background: #30363d; color: #e6edf3; }
+  .history-btn.active { background: #388bfd22; border-color: #388bfd; color: #58a6ff; }
+
+  .history-drawer {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 100%;
+    background: #0d1117;
+    display: none;
+    flex-direction: column;
+    z-index: 10;
+  }
+  .history-drawer.open { display: flex; }
+
+  .history-header {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .history-header span {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8b949e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .history-close {
+    background: none;
+    border: none;
+    color: #6e7681;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+  }
+  .history-close:hover { color: #e6edf3; }
+
+  .history-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+  .history-list::-webkit-scrollbar { width: 4px; }
+  .history-list::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+
+  .history-empty {
+    color: #6e7681;
+    font-size: 13px;
+    padding: 24px;
+    text-align: center;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 6px;
+    padding: 9px 12px;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .history-item:hover { background: #1c2128; border-color: #388bfd55; }
+
+  .hi-ticker {
+    background: #21262d;
+    border-radius: 4px;
+    color: #e6edf3;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    min-width: 46px;
+    padding: 3px 6px;
+    text-align: center;
+  }
+
+  .hi-meta { flex: 1; min-width: 0; }
+  .hi-time { color: #8b949e; font-size: 11px; }
+  .hi-price { color: #6e7681; font-size: 11px; }
+
+  .hi-verdict {
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+  }
+  .hi-verdict.BULLISH { background: rgba(63,185,80,0.15); color: #3fb950; }
+  .hi-verdict.BEARISH { background: rgba(248,81,73,0.15);  color: #f85149; }
+  .hi-verdict.NEUTRAL { background: rgba(139,148,158,0.15); color: #8b949e; }
+
+  .hi-delete {
+    background: none;
+    border: none;
+    color: #6e7681;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0 2px;
+    flex-shrink: 0;
+  }
+  .hi-delete:hover { color: #f85149; }
+
+  .history-from-badge {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 5px;
+    color: #8b949e;
+    font-size: 11px;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+    display: none;
+  }
+  .history-from-badge.visible { display: block; }
+
+  /* Keep analysis panel position relative for drawer */
+  .analysis-panel { position: relative; }
+
+  /* ── Key Takeaways ── */
+  .takeaways-section {
+    border-top: 1px solid #21262d;
+    display: none;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .takeaways-section.visible { display: flex; }
+
+  /* Drag-to-resize handle */
+  .resize-handle {
+    height: 6px;
+    background: transparent;
+    border-top: 2px solid #21262d;
+    cursor: ns-resize;
+    flex-shrink: 0;
+    transition: border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .resize-handle:hover { border-color: #388bfd88; }
+  .resize-handle::after {
+    content: "⠿";
+    color: #30363d;
+    font-size: 10px;
+    letter-spacing: 2px;
+    margin-top: -2px;
+  }
+  .resize-handle:hover::after { color: #388bfd88; }
+
+  .takeaways-toggle {
+    width: 100%;
+    background: #161b22;
+    border: none;
+    border-bottom: 1px solid #21262d;
+    color: #8b949e;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    padding: 7px 16px;
+    text-align: left;
+    text-transform: uppercase;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+  }
+  .takeaways-toggle:hover { background: #1c2128; color: #e6edf3; }
+  .takeaways-toggle .arrow { transition: transform 0.2s; font-size: 10px; }
+  .takeaways-toggle.open .arrow { transform: rotate(180deg); }
+
+  .takeaways-body {
+    display: none;
+    padding: 8px 12px 10px;
+    gap: 5px;
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 80px;
+  }
+  .takeaways-body::-webkit-scrollbar { width: 3px; }
+  .takeaways-body::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+  .takeaways-body.open { display: flex; }
+
+  /* Entry / Exit highlight rows */
+  .kp-row.entry {
+    border-left-color: #d29922;
+    background: rgba(210,153,34,0.07);
+    border-width: 3px;
+  }
+  .kp-row.exit {
+    border-left-color: #f85149;
+    background: rgba(248,81,73,0.07);
+    border-width: 3px;
+  }
+  .kp-row.entry .kp-label { color: #d29922; }
+  .kp-row.exit  .kp-label { color: #f85149; }
+
+  .kp-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #0d1117;
+    border-radius: 5px;
+    border-left: 3px solid #30363d;
+    padding: 5px 8px;
+    font-size: 11.5px;
+    line-height: 1.45;
+    transition: border-color 0.2s;
+    flex-shrink: 0;
+  }
+  .kp-row.bull  { border-left-color: #3fb950; background: rgba(63,185,80,0.05); }
+  .kp-row.bear  { border-left-color: #f85149; background: rgba(248,81,73,0.05); }
+  .kp-row.warn  { border-left-color: #d29922; background: rgba(210,153,34,0.05); }
+  .kp-row.info  { border-left-color: #58a6ff; background: rgba(88,166,255,0.05); }
+  .kp-row.muted { border-left-color: #30363d; }
+
+  .kp-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+  .kp-text { flex: 1; color: #c9d1d9; min-width: 0; }
+  .kp-label {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 1px;
+  }
+  .kp-row.bull  .kp-label { color: #3fb950; }
+  .kp-row.bear  .kp-label { color: #f85149; }
+  .kp-row.warn  .kp-label { color: #d29922; }
+  .kp-row.info  .kp-label { color: #58a6ff; }
+  .kp-row.muted .kp-label { color: #8b949e; }
+  .kp-value { color: #e6edf3; font-weight: 500; word-break: break-word; }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">📈 McAllen <span>Analyst</span></div>
+
+  <div class="search-bar">
+    <input id="ticker-input" type="text" placeholder="AAPL" maxlength="10" />
+    <button id="analyze-btn" onclick="runAnalysis()">Analyze</button>
+  </div>
+
+  <div class="status-badge">
+    <div class="spinner" id="spinner"></div>
+    <span id="status-text"></span>
+  </div>
+
+  <button id="install-btn" onclick="installPWA()"
+    style="display:none;align-items:center;gap:5px;background:#238636;border:1px solid #2ea043;
+           border-radius:6px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;
+           padding:5px 12px;white-space:nowrap;">
+    ⬇ Install App
+  </button>
+
+  <div class="price-info" id="price-info" style="display:none">
+    <div>
+      <div class="price-tag" id="price-tag"></div>
+      <div id="change-tag" style="font-size:12px"></div>
+    </div>
+    <div style="font-size:11px;color:#6e7681;text-align:right">
+      <div id="ma-tag"></div>
+      <div id="vol-tag"></div>
+    </div>
+  </div>
+</header>
+
+<!-- ── Main ── -->
+<main>
+
+  <!-- Chart -->
+  <div class="chart-panel">
+    <div class="panel-header">
+      <span>Chart</span>
+      <span id="chart-ticker" style="color:#58a6ff"></span>
+    </div>
+    <div id="tv-chart-container"></div>
+  </div>
+
+  <!-- Analysis -->
+  <div class="analysis-panel">
+    <div class="panel-header">
+      <span>Analysis</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="analysis-ticker" style="color:#58a6ff"></span>
+        <button class="history-btn" id="history-btn" onclick="toggleHistory()">🕐 History</button>
+      </div>
+    </div>
+
+    <!-- History drawer (overlays the analysis panel) -->
+    <div class="history-drawer" id="history-drawer">
+      <div class="history-header">
+        <span>📋 Analysis History</span>
+        <button class="history-close" onclick="toggleHistory()">✕</button>
+      </div>
+      <div style="padding:8px 8px 4px">
+        <input id="history-search" type="text" placeholder="Search ticker…"
+          oninput="filterHistory(this.value)"
+          style="width:100%;background:#161b22;border:1px solid #30363d;border-radius:5px;
+                 color:#e6edf3;font-size:12px;font-weight:600;letter-spacing:0.5px;
+                 outline:none;padding:6px 10px;text-transform:uppercase;
+                 transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='#58a6ff'"
+          onblur="this.style.borderColor='#30363d'" />
+      </div>
+      <div class="history-list" id="history-list">
+        <div class="history-empty">No saved analyses yet.</div>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat-item">
+        <div class="stat-label" data-tip="Today's closing price. Compare to support/resistance levels to judge where you are in the range.">Price</div>
+        <div class="stat-value" id="s-price">—</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label" data-tip="Highest price in the last 52 weeks. Acts as strong resistance — price often stalls or reverses near this level. A breakout above it on high volume is a powerful bull signal.">52W High</div>
+        <div class="stat-value" id="s-52h">—</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label" data-tip="Lowest price in the last 52 weeks. Acts as major support. A bounce here can signal a bottom; a break below it signals a significant new downtrend.">52W Low</div>
+        <div class="stat-value" id="s-52l">—</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label" data-tip="200-Day Moving Average — the most important line on any chart. Above = primary bull trend, below = primary bear trend. The MA200 itself is heavy support in uptrends and heavy resistance in downtrends.">vs MA200</div>
+        <div class="stat-value" id="s-ma200">—</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label" data-tip="50-Day Moving Average — tracks the intermediate trend. In a healthy uptrend, price pulls back to the MA50 and bounces — that's the ideal entry zone. Below MA50 with MA50 under MA200 = Death Cross (bearish). Above both = Golden Cross (bullish).">vs MA50</div>
+        <div class="stat-value" id="s-ma50">—</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label" data-tip="Today's volume vs the 20-day average. Above 1x = normal. Above 2x on a breakout = strong conviction. High volume on a down day is a warning. Low volume on a rally = suspect move — may not hold.">Volume</div>
+        <div class="stat-value" id="s-vol">—</div>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="analysis-body" id="analysis-body">
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">🔍</div>
+        <h3>Enter a ticker to begin</h3>
+        <p>The agent will search the web for fundamentals &amp; macro data, then apply McAllen technical analysis.</p>
+      </div>
+
+      <div class="history-from-badge" id="history-from-badge"></div>
+      <div class="analysis-content" id="analysis-content"></div>
+      <div class="error-box" id="error-box"></div>
+    </div>
+
+    <!-- Verdict -->
+    <div class="verdict-section" id="verdict-section">
+      <div class="verdict-badge" id="verdict-badge"></div>
+    </div>
+
+    <!-- Key Takeaways -->
+    <div class="takeaways-section" id="takeaways-section">
+      <div class="resize-handle" id="resize-handle"></div>
+      <button class="takeaways-toggle open" id="takeaways-toggle" onclick="toggleTakeaways()">
+        <span>⚡ Key Takeaways</span>
+        <span class="arrow">▲</span>
+      </button>
+      <div class="takeaways-body open" id="takeaways-body"></div>
+    </div>
+  </div>
+</main>
+
+<!-- TradingView -->
+<script src="https://s3.tradingview.com/tv.js"></script>
+
+<script>
+const API_BASE = "";
+let tvWidget = null;
+let currentES = null;
+let rawText = "";
+
+// ── TradingView chart ──
+function loadChart(ticker) {
+  document.getElementById("chart-ticker").textContent = ticker;
+  if (tvWidget) {
+    tvWidget.remove();
+    tvWidget = null;
+  }
+  const container = document.getElementById("tv-chart-container");
+  container.innerHTML = "";
+
+  tvWidget = new TradingView.widget({
+    container_id: "tv-chart-container",
+    symbol: ticker,
+    interval: "D",
+    timezone: "Etc/UTC",
+    theme: "dark",
+    style: "1",
+    locale: "en",
+    toolbar_bg: "#161b22",
+    enable_publishing: false,
+    hide_top_toolbar: false,
+    hide_side_toolbar: false,
+    allow_symbol_change: false,
+    save_image: false,
+    width: "100%",
+    height: "100%",
+    studies: ["MASimple@tv-scriptstd;length=20", "MASimple@tv-scriptstd;length=50", "MASimple@tv-scriptstd;length=200"],
+    overrides: {
+      "mainSeriesProperties.candleStyle.upColor": "#3fb950",
+      "mainSeriesProperties.candleStyle.downColor": "#f85149",
+      "mainSeriesProperties.candleStyle.wickUpColor": "#3fb950",
+      "mainSeriesProperties.candleStyle.wickDownColor": "#f85149",
+    },
+  });
+}
+
+// ── Stats bar ──
+function updateStats(data) {
+  document.getElementById("stats-bar").classList.add("visible");
+  document.getElementById("s-price").textContent = `$${data.current_price}`;
+
+  const chg = data.daily_change_pct;
+  const chgEl = document.getElementById("price-info");
+  document.getElementById("price-tag").textContent = `$${data.current_price}`;
+  const changeTag = document.getElementById("change-tag");
+  changeTag.textContent = `${chg >= 0 ? "+" : ""}${chg}%`;
+  changeTag.className = chg >= 0 ? "change-positive" : "change-negative";
+  chgEl.style.display = "flex";
+
+  document.getElementById("s-52h").textContent = `$${data["52w_high"]}`;
+  document.getElementById("s-52l").textContent = `$${data["52w_low"]}`;
+
+  const ma200El = document.getElementById("s-ma200");
+  ma200El.textContent = data.price_vs_ma200 === "above" ? "▲ Above" : "▼ Below";
+  ma200El.className = "stat-value " + (data.price_vs_ma200 === "above" ? "bullish" : "bearish");
+
+  const ma50El = document.getElementById("s-ma50");
+  ma50El.textContent = data.price_vs_ma50 === "above" ? "▲ Above" : "▼ Below";
+  ma50El.className = "stat-value " + (data.price_vs_ma50 === "above" ? "bullish" : "bearish");
+
+  document.getElementById("s-vol").textContent = data.volume_ratio;
+  document.getElementById("ma-tag").textContent = `MA200: $${data.ma200} | MA50: $${data.ma50}`;
+  document.getElementById("vol-tag").textContent = `Vol: ${data.volume_ratio}`;
+}
+
+// ── Verdict parsing ──
+function extractVerdict(text) {
+  const match = text.match(/\*\*VERDICT:\*\*\s*(BULLISH|BEARISH|NEUTRAL)/i);
+  if (!match) return null;
+  const verdict = match[1].toUpperCase();
+  const emoji = verdict === "BULLISH" ? "🟢" : verdict === "BEARISH" ? "🔴" : "⚪";
+  const cls = verdict === "BULLISH" ? "bullish" : verdict === "BEARISH" ? "bearish" : "neutral";
+  return { verdict, emoji, cls };
+}
+
+function showVerdict(v) {
+  const sec = document.getElementById("verdict-section");
+  const badge = document.getElementById("verdict-badge");
+  badge.textContent = `${v.emoji} ${v.verdict}`;
+  badge.className = `verdict-badge verdict-${v.cls}`;
+  sec.classList.add("visible");
+}
+
+// ── Main analysis ──
+function runAnalysis() {
+  const ticker = document.getElementById("ticker-input").value.trim().toUpperCase();
+  if (!ticker) return;
+
+  // Cancel existing stream
+  if (currentES) { currentES.close(); currentES = null; }
+
+  // Reset UI
+  rawText = "";
+  document.getElementById("placeholder").style.display = "none";
+  document.getElementById("error-box").classList.remove("visible");
+  document.getElementById("verdict-section").classList.remove("visible");
+  document.getElementById("takeaways-section").classList.remove("visible");
+  document.getElementById("takeaways-body").innerHTML = "";
+  document.getElementById("history-from-badge").classList.remove("visible");
+  document.getElementById("history-drawer").classList.remove("open");
+  document.getElementById("history-btn").classList.remove("active");
+  document.getElementById("analysis-content").className = "analysis-content visible";
+  document.getElementById("analysis-content").innerHTML = "";
+  document.getElementById("analysis-ticker").textContent = ticker;
+  document.getElementById("analyze-btn").disabled = true;
+  document.getElementById("spinner").classList.add("active");
+  document.getElementById("status-text").textContent = "Searching web & analyzing…";
+
+  loadChart(ticker);
+
+  currentES = new EventSource(`${API_BASE}/analyze/${ticker}`);
+
+  currentES.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+
+    if (msg.type === "meta") {
+      updateStats(msg.data);
+      return;
+    }
+
+    if (msg.type === "text") {
+      rawText += msg.content;
+      document.getElementById("analysis-content").innerHTML = marked.parse(rawText);
+      // Auto-scroll
+      const body = document.getElementById("analysis-body");
+      body.scrollTop = body.scrollHeight;
+
+      const v = extractVerdict(rawText);
+      if (v) showVerdict(v);
+      return;
+    }
+
+    if (msg.type === "done") {
+      currentES.close();
+      currentES = null;
+      document.getElementById("analyze-btn").disabled = false;
+      document.getElementById("spinner").classList.remove("active");
+      document.getElementById("status-text").textContent = "Analysis complete";
+      setTimeout(() => document.getElementById("status-text").textContent = "", 3000);
+      showTakeaways(rawText);
+      return;
+    }
+
+    if (msg.type === "error") {
+      currentES.close();
+      currentES = null;
+      document.getElementById("analyze-btn").disabled = false;
+      document.getElementById("spinner").classList.remove("active");
+      document.getElementById("status-text").textContent = "";
+      document.getElementById("error-box").textContent = "Error: " + msg.content;
+      document.getElementById("error-box").classList.add("visible");
+    }
+  };
+
+  currentES.onerror = () => {
+    currentES.close();
+    currentES = null;
+    document.getElementById("analyze-btn").disabled = false;
+    document.getElementById("spinner").classList.remove("active");
+    document.getElementById("status-text").textContent = "";
+  };
+}
+
+// ── History ──
+async function toggleHistory() {
+  const drawer = document.getElementById("history-drawer");
+  const btn = document.getElementById("history-btn");
+  const isOpen = drawer.classList.contains("open");
+  if (isOpen) {
+    drawer.classList.remove("open");
+    btn.classList.remove("active");
+  } else {
+    drawer.classList.add("open");
+    btn.classList.add("active");
+    document.getElementById("history-search").value = "";
+    await loadHistory();
+  }
+}
+
+let historyCache = [];
+
+function filterHistory(query) {
+  const q = query.trim().toUpperCase();
+  const filtered = q ? historyCache.filter(i => i.ticker.includes(q)) : historyCache;
+  renderHistoryItems(filtered, q);
+}
+
+function renderHistoryItems(items, query = "") {
+  const list = document.getElementById("history-list");
+  if (!items.length) {
+    list.innerHTML = query
+      ? `<div class="history-empty">No results for <strong>${query}</strong></div>`
+      : '<div class="history-empty">No saved analyses yet.<br>Run an analysis to start building history.</div>';
+    return;
+  }
+  list.innerHTML = items.map(item => {
+    const chg = item.daily_change !== null
+      ? `<span style="color:${item.daily_change >= 0 ? '#3fb950' : '#f85149'}">${item.daily_change >= 0 ? '+' : ''}${item.daily_change?.toFixed(2)}%</span>`
+      : '';
+    const price = item.price ? `$${item.price} ${chg}` : '';
+    const verdictCls = item.verdict || 'NEUTRAL';
+    // Highlight matching ticker letters
+    const tickerHtml = query && item.ticker.includes(query)
+      ? item.ticker.replace(query, `<mark style="background:#388bfd33;color:#58a6ff;border-radius:2px">${query}</mark>`)
+      : item.ticker;
+    return `<div class="history-item" onclick="loadFromHistory(${item.id}, '${item.ticker}', '${item.searched_at}')">
+      <div class="hi-ticker">${tickerHtml}</div>
+      <div class="hi-meta">
+        <div class="hi-time">🕐 ${item.searched_at}</div>
+        <div class="hi-price">${price}</div>
+      </div>
+      <div class="hi-verdict ${verdictCls}">${item.verdict || '—'}</div>
+      <button class="hi-delete" title="Delete" onclick="deleteHistory(event, ${item.id})">🗑</button>
+    </div>`;
+  }).join("");
+}
+
+async function loadHistory() {
+  const list = document.getElementById("history-list");
+  try {
+    const res = await fetch(`${API_BASE}/history`);
+    const items = await res.json();
+    historyCache = items;
+    renderHistoryItems(items);
+  } catch (e) {
+    list.innerHTML = `<div class="history-empty">Error loading history.</div>`;
+  }
+}
+
+async function loadFromHistory(id, ticker, searchedAt) {
+  try {
+    const res = await fetch(`${API_BASE}/history/${id}`);
+    const data = await res.json();
+
+    // Close drawer
+    document.getElementById("history-drawer").classList.remove("open");
+    document.getElementById("history-btn").classList.remove("active");
+
+    // Populate analysis panel
+    rawText = data.analysis_text;
+    document.getElementById("placeholder").style.display = "none";
+    document.getElementById("error-box").classList.remove("visible");
+    document.getElementById("verdict-section").classList.remove("visible");
+    document.getElementById("takeaways-section").classList.remove("visible");
+
+    const badge = document.getElementById("history-from-badge");
+    badge.textContent = `📁 Loaded from history · ${searchedAt}`;
+    badge.classList.add("visible");
+
+    document.getElementById("analysis-ticker").textContent = ticker;
+    document.getElementById("analysis-content").className = "analysis-content visible";
+    document.getElementById("analysis-content").innerHTML = marked.parse(rawText);
+
+    loadChart(ticker);
+
+    const v = extractVerdict(rawText);
+    if (v) showVerdict(v);
+    showTakeaways(rawText);
+
+  } catch (e) {
+    alert("Failed to load analysis.");
+  }
+}
+
+async function deleteHistory(event, id) {
+  event.stopPropagation();
+  if (!confirm("Delete this analysis from history?")) return;
+  await fetch(`${API_BASE}/history/${id}`, { method: "DELETE" });
+  await loadHistory();
+  // Re-apply current search filter after reload
+  const q = document.getElementById("history-search").value;
+  if (q) filterHistory(q);
+}
+
+// ── Resize handle ──
+(function() {
+  let dragging = false, startY = 0, startH = 0;
+  document.addEventListener('mousedown', e => {
+    if (e.target.id !== 'resize-handle') return;
+    dragging = true;
+    startY = e.clientY;
+    startH = document.getElementById('takeaways-body').offsetHeight;
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'ns-resize';
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const delta = startY - e.clientY;          // drag up = expand
+    const newH = Math.max(80, Math.min(520, startH + delta));
+    document.getElementById('takeaways-body').style.height = newH + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+  });
+})();
+
+// ── Key Takeaways ──
+function toggleTakeaways() {
+  const btn = document.getElementById("takeaways-toggle");
+  const body = document.getElementById("takeaways-body");
+  btn.classList.toggle("open");
+  body.classList.toggle("open");
+}
+
+function extract(text, label) {
+  const re = new RegExp(`\\*\\*${label}:\\*\\*([\\s\\S]*?)(?=\\n\\*\\*|\\n---|\$)`, "i");
+  const m = text.match(re);
+  return m ? m[1].trim() : null;
+}
+
+function colorClass(text, positiveWords, negativeWords, warnWords) {
+  const t = (text || "").toLowerCase();
+  if (positiveWords.some(w => t.includes(w))) return "bull";
+  if (negativeWords.some(w => t.includes(w))) return "bear";
+  if (warnWords && warnWords.some(w => t.includes(w))) return "warn";
+  return "muted";
+}
+
+function kpRow(cls, icon, label, value) {
+  return `<div class="kp-row ${cls}">
+    <div class="kp-icon">${icon}</div>
+    <div class="kp-text">
+      <div class="kp-label">${label}</div>
+      <div class="kp-value">${value}</div>
+    </div>
+  </div>`;
+}
+
+function buildTakeaways(text) {
+  const rows = [];
+
+  // 1. Trend direction
+  const trend = extract(text, "PRIMARY TREND");
+  if (trend) {
+    const cls = colorClass(trend, ["bull", "advance", "higher high"], ["bear", "declin", "lower low"], ["sideways", "range"]);
+    const icon = cls === "bull" ? "📈" : cls === "bear" ? "📉" : "↔️";
+    const summary = trend.split("—")[0].trim().replace(/\*+/g, "");
+    rows.push(kpRow(cls, icon, "Trend Direction", summary));
+  }
+
+  // 2. Key levels
+  const levels = extract(text, "KEY LEVELS");
+  if (levels) {
+    const clean = levels.replace(/\n/g, " • ").replace(/\*+/g, "").replace(/- /g, "").trim();
+    rows.push(kpRow("info", "🎯", "Support & Resistance", clean.slice(0, 120)));
+  }
+
+  // 3. Pattern
+  const pattern = extract(text, "PATTERN");
+  if (pattern) {
+    const bullPatterns = ["bull flag", "inverted head", "double bottom", "ascending", "cup", "pennant", "breakout"];
+    const bearPatterns = ["head and shoulder", "double top", "bear flag", "descending", "breakdown", "distribution"];
+    const cls = colorClass(pattern, bullPatterns, bearPatterns, []);
+    const icon = cls === "bull" ? "🟢" : cls === "bear" ? "🔴" : "🔷";
+    rows.push(kpRow(cls, icon, "Chart Pattern", pattern.replace(/\*+/g, "").trim()));
+  }
+
+  // 4. Candle momentum
+  const candles = extract(text, "CANDLESTICK SIGNALS");
+  if (candles) {
+    const bullCandles = ["hammer", "engulfing", "soldier", "harami bull", "morning star", "doji at support"];
+    const bearCandles = ["shooting star", "hanging man", "crow", "bearish engulf", "evening star", "spinning top at top"];
+    const cls = colorClass(candles, bullCandles, bearCandles, ["doji", "spinning top", "indecision"]);
+    const icon = cls === "bull" ? "🕯️" : cls === "bear" ? "🕯️" : "⚠️";
+    rows.push(kpRow(cls, icon, "Candle Momentum", candles.replace(/\*+/g, "").trim().slice(0, 120)));
+  }
+
+  // 5. Trade plan — bias + target
+  const setup = extract(text, "TRADE SETUP");
+  if (setup) {
+    const biasMatch   = setup.match(/Bias:\s*([^\n]+)/i);
+    const entryMatch  = setup.match(/Entry[^:]*:\s*([^\n]+)/i);
+    const stopMatch   = setup.match(/Stop[^:]*:\s*([^\n]+)/i);
+    const targetMatch = setup.match(/Target:\s*([^\n]+)/i);
+
+    const bias   = biasMatch   ? biasMatch[1].replace(/\*+/g, "").trim() : "";
+    const entry  = entryMatch  ? entryMatch[1].replace(/\*+/g, "").trim() : "";
+    const stop   = stopMatch   ? stopMatch[1].replace(/\*+/g, "").trim() : "";
+    const target = targetMatch ? targetMatch[1].replace(/\*+/g, "").trim() : "";
+
+    // Bias + target row
+    const cls = colorClass(bias, ["long"], ["short"], ["no trade"]);
+    const icon = cls === "bull" ? "🟢" : cls === "bear" ? "🔴" : "⚪";
+    const plan = [bias && `Bias: ${bias}`, target && `Target: ${target}`].filter(Boolean).join(" · ");
+    if (plan) rows.push(kpRow(cls, icon, "Trade Bias & Target", plan));
+
+    // Entry trigger row — highlighted amber
+    if (entry) rows.push(`<div class="kp-row entry">
+      <div class="kp-icon">🎯</div>
+      <div class="kp-text">
+        <div class="kp-label">Entry Trigger — wait for this</div>
+        <div class="kp-value">${entry}</div>
+      </div>
+    </div>`);
+
+    // Exit / stop row — highlighted red
+    if (stop) rows.push(`<div class="kp-row exit">
+      <div class="kp-icon">🛑</div>
+      <div class="kp-text">
+        <div class="kp-label">Exit / Stop Loss — if breached, close immediately</div>
+        <div class="kp-value">${stop}</div>
+      </div>
+    </div>`);
+  }
+
+  // 6. Risk / Reward
+  const rrMatch = text.match(/Risk[\/\-]?Reward[^:]*:\s*([^\n]+)/i);
+  if (rrMatch) {
+    const rrRaw = rrMatch[1].replace(/\*+/g, "").trim();
+    const numMatch = rrRaw.match(/(\d+\.?\d*)\s*[:x]/i);
+    const ratio = numMatch ? parseFloat(numMatch[1]) : null;
+    const cls = ratio === null ? "muted" : ratio >= 2 ? "bull" : ratio >= 1 ? "warn" : "bear";
+    const icon = cls === "bull" ? "💰" : cls === "warn" ? "⚖️" : "⚠️";
+    const desc = ratio !== null
+      ? `${rrRaw} — ${ratio >= 2 ? "Favourable" : ratio >= 1 ? "Marginal — consider waiting for better setup" : "Poor — do not take this trade"}`
+      : rrRaw;
+    rows.push(kpRow(cls, icon, "Risk / Reward", desc));
+  }
+
+  return rows.join("");
+}
+
+function showTakeaways(text) {
+  const html = buildTakeaways(text);
+  if (!html) return;
+  document.getElementById("takeaways-body").innerHTML = html;
+  document.getElementById("takeaways-section").classList.add("visible");
+}
+
+// Enter key support
+document.getElementById("ticker-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") runAnalysis();
+});
+
+// Load default chart
+loadChart("NASDAQ:AAPL");
+
+function installPWA() {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(() => { deferredInstall = null; });
+  }
+}
+
+// Register service worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => console.log('SW registered', r.scope))
+      .catch(e => console.warn('SW failed', e));
+  });
+}
+
+// PWA install prompt
+let deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  const btn = document.getElementById('install-btn');
+  if (btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('install-btn');
+  if (btn) btn.style.display = 'none';
+});
+</script>
+</body>
+</html>

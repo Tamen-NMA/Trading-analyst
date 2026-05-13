@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Environment & secrets
+.env
+*.env
+
+# Local database
+*.db
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Claude Code local settings
+.claude/
+
+# Books / large assets
+*.pdf

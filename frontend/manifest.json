@@ -1,0 +1,37 @@
+{
+  "name": "McAllen Trading Analyst",
+  "short_name": "McAllen",
+  "description": "AI-powered technical & fundamental trading analysis",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#161b22",
+  "orientation": "landscape-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "shortcuts": [
+    {
+      "name": "New Analysis",
+      "url": "/",
+      "description": "Run a new ticker analysis"
+    },
+    {
+      "name": "History",
+      "url": "/?history=1",
+      "description": "Browse saved analyses"
+    }
+  ]
+}

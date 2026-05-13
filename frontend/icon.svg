@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="90" fill="#161b22"/>
+  <!-- MA line -->
+  <polyline points="60,370 140,290 220,310 310,190 420,140"
+    stroke="#58a6ff" stroke-width="14" fill="none"
+    stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Candle 1 (green) -->
+  <line x1="100" y1="310" x2="100" y2="330" stroke="#3fb950" stroke-width="5"/>
+  <rect x="83" y="330" width="34" height="70" rx="4" fill="#3fb950"/>
+  <line x1="100" y1="400" x2="100" y2="420" stroke="#3fb950" stroke-width="5"/>
+  <!-- Candle 2 (red) -->
+  <line x1="185" y1="265" x2="185" y2="285" stroke="#f85149" stroke-width="5"/>
+  <rect x="168" y="285" width="34" height="55" rx="4" fill="#f85149"/>
+  <line x1="185" y1="340" x2="185" y2="360" stroke="#f85149" stroke-width="5"/>
+  <!-- Candle 3 (green) -->
+  <line x1="270" y1="185" x2="270" y2="205" stroke="#3fb950" stroke-width="5"/>
+  <rect x="253" y="205" width="34" height="65" rx="4" fill="#3fb950"/>
+  <line x1="270" y1="270" x2="270" y2="292" stroke="#3fb950" stroke-width="5"/>
+  <!-- Candle 4 (green) -->
+  <line x1="370" y1="135" x2="370" y2="155" stroke="#3fb950" stroke-width="5"/>
+  <rect x="353" y="155" width="34" height="75" rx="4" fill="#3fb950"/>
+  <line x1="370" y1="230" x2="370" y2="252" stroke="#3fb950" stroke-width="5"/>
+  <!-- Ticker label -->
+  <text x="256" y="470" font-family="monospace" font-size="52" font-weight="bold"
+    fill="#58a6ff" text-anchor="middle" letter-spacing="4">MCA</text>
+</svg>
