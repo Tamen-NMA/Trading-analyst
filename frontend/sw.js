@@ -1,6 +1,5 @@
-const CACHE = 'mcallen-v1';
-const STATIC = [
-  '/',
+const CACHE = 'mcallen-v2';
+const IMMUTABLE = [
   '/manifest.json',
   '/icon.svg',
   '/icon-maskable.svg',
@@ -8,16 +7,16 @@ const STATIC = [
   'https://s3.tradingview.com/tv.js',
 ];
 
-// Install — pre-cache shell
+// Install — pre-cache only truly static assets (not index.html)
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => c.addAll(STATIC.filter(u => u.startsWith('/'))))
+      .then(c => c.addAll(IMMUTABLE.filter(u => u.startsWith('/'))))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate — purge old caches
+// Activate — purge old caches immediately
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
@@ -26,29 +25,32 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Fetch strategy
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
 
-  // SSE streams & API — always network, never cache
-  if (['/analyze/', '/history', '/price/', '/health'].some(p => url.pathname.startsWith(p))) {
+  // API & SSE — always network, never cache
+  if (['/analyze/', '/history', '/price/', '/explain', '/health'].some(p => url.pathname.startsWith(p))) {
     e.respondWith(fetch(e.request));
     return;
   }
 
-  // CDN & static — cache-first, network fallback
+  // HTML navigation — network-first so deployments are picked up immediately
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match('/'))
+    );
+    return;
+  }
+
+  // Icons, manifest, CDN libs — cache-first (these never change)
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(res => {
         if (res.ok && e.request.method === 'GET') {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+          caches.open(CACHE).then(c => c.put(e.request, res.clone()));
         }
         return res;
-      }).catch(() => {
-        // Offline fallback for navigation
-        if (e.request.mode === 'navigate') return caches.match('/');
       });
     })
   );
