@@ -1414,7 +1414,13 @@ function toggleTakeaways() {
 }
 
 function extract(text, label) {
-  const re = new RegExp(`\\*\\*${label}:\\*\\*([\\s\\S]*?)(?=\\n\\*\\*|\\n---|\$)`, "i");
+  // Stop only at known section headers, not at bold text *within* sections
+  // (e.g. **Bias:** inside TRADE SETUP was previously cutting off the capture early)
+  const headers = "PRIMARY TREND|KEY LEVELS|PATTERN|CANDLESTICK SIGNALS|MOVING AVERAGES|VOLUME|FUNDAMENTALS|MACRO CONTEXT|TRADE SETUP|VERDICT";
+  const re = new RegExp(
+    `\\*\\*${label}:\\*\\*([\\s\\S]*?)(?=\\n\\*\\*(?:${headers}):\\*\\*|\\n---|\$)`,
+    "i"
+  );
   const m = text.match(re);
   return m ? m[1].trim() : null;
 }
@@ -1514,8 +1520,9 @@ function buildTakeaways(text) {
     </div>`);
   }
 
-  // 6. Risk / Reward
-  const rrMatch = text.match(/Risk[\/\-]?Reward[^:]*:\s*([^\n]+)/i);
+  // 6. Risk / Reward — search within setup section to avoid false matches earlier in the text
+  const rrSource = setup || text;
+  const rrMatch = rrSource.match(/Risk[\/\-]?Reward[^:]*:\s*([^\n]+)/i);
   if (rrMatch) {
     const rrRaw = rrMatch[1].replace(/\*+/g, "").trim();
     const numMatch = rrRaw.match(/(\d+\.?\d*)\s*[:x]/i);

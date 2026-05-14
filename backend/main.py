@@ -336,7 +336,7 @@ async def analyze(ticker: str):
             try:
                 async with async_client.messages.stream(
                     model="claude-opus-4-7",
-                    max_tokens=4096,
+                    max_tokens=8192,
                     system=cached_system,
                     tools=[{"type": "web_search_20260209", "name": "web_search"}],
                     messages=messages,
