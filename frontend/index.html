@@ -672,9 +672,24 @@
   /* Chart */
   .mob-chart-box {
     border-radius:12px; overflow:hidden;
-    height: 560px;
-    margin-bottom:14px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+    height: 480px;
+    margin-bottom:14px;
+    background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+    display:flex; flex-direction:column;
   }
+  .mob-chart-controls {
+    display:flex; gap:5px; padding:8px 10px; flex-shrink:0;
+    border-bottom:1px solid rgba(255,255,255,0.07);
+  }
+  .mob-ctype-btn {
+    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+    border-radius:6px; color:#8b949e; cursor:pointer; font-size:11px; font-weight:600;
+    padding:5px 10px; transition:all .15s; flex:1; text-align:center;
+  }
+  .mob-ctype-btn.active {
+    background:rgba(63,185,80,0.15); border-color:rgba(63,185,80,0.4); color:#3fb950;
+  }
+  #mob-canvas { flex:1; width:100%; display:block; min-height:0; }
 
   /* Stats grid */
   .mob-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
@@ -1001,7 +1016,15 @@
 
   <!-- Chart tab -->
   <div class="mob-tab-content" id="mob-chart-tab">
-    <div class="mob-chart-box" id="mob-tv-container"></div>
+    <div class="mob-chart-box">
+      <div class="mob-chart-controls">
+        <button class="mob-ctype-btn active" onclick="setMobChartType('candles')">Candles</button>
+        <button class="mob-ctype-btn"        onclick="setMobChartType('hollow')">Hollow</button>
+        <button class="mob-ctype-btn"        onclick="setMobChartType('bars')">Bars</button>
+        <button class="mob-ctype-btn"        onclick="setMobChartType('line')">Line</button>
+      </div>
+      <canvas id="mob-canvas"></canvas>
+    </div>
     <div class="mob-stats-grid" id="mob-stats-grid" style="display:none">
       <div class="mob-stat"><div class="mob-stat-label">Price</div><div class="mob-stat-value" id="mob-s-price">—</div></div>
       <div class="mob-stat"><div class="mob-stat-label">52W High</div><div class="mob-stat-value" id="mob-s-52h">—</div></div>
@@ -1183,7 +1206,8 @@ function runAnalysis() {
     if (msg.type === "meta") {
       updateStats(msg.data);
       updateMobStats(msg.data);
-      loadMobChart(ticker);
+      mobPriceData = msg.data.last_30_candles;
+      renderMobCanvas();
       return;
     }
 
@@ -1580,7 +1604,6 @@ function closeExplain() {
 }
 
 // ── Mobile view ───────────────────────────────────────────
-let mobTvWidget = null;
 let mobHistoryCache = [];
 
 function setMobTab(tab) {
@@ -1591,37 +1614,193 @@ function setMobTab(tab) {
   if (tab === "history") loadMobHistory();
 }
 
-function loadMobChart(ticker) {
-  if (window.innerWidth > 768) return;
-  const c = document.getElementById("mob-tv-container");
-  if (!c) return;
-  if (mobTvWidget) { mobTvWidget.remove(); mobTvWidget = null; }
-  c.innerHTML = "";
-  mobTvWidget = new TradingView.widget({
-    container_id: "mob-tv-container",
-    symbol: ticker,
-    interval: "D",
-    timezone: "Etc/UTC",
-    theme: "dark",
-    style: "1",
-    locale: "en",
-    toolbar_bg: "#161b22",
-    enable_publishing: false,
-    hide_top_toolbar: false,
-    hide_side_toolbar: true,
-    allow_symbol_change: false,
-    save_image: false,
-    width: "100%",
-    height: "100%",
-    studies: ["MASimple@tv-scriptstd;length=50","MASimple@tv-scriptstd;length=200"],
-    overrides: {
-      "mainSeriesProperties.candleStyle.upColor": "#3fb950",
-      "mainSeriesProperties.candleStyle.downColor": "#f85149",
-      "mainSeriesProperties.candleStyle.wickUpColor": "#3fb950",
-      "mainSeriesProperties.candleStyle.wickDownColor": "#f85149",
-    },
-  });
+// ── Canvas chart ─────────────────────────────────────────
+let mobPriceData = null;
+let mobChartType = "candles";
+let mobTouchIdx  = null;
+
+async function fetchMobPrice(ticker) {
+  try {
+    const res = await fetch(`${API_BASE}/price/${ticker}`);
+    const data = await res.json();
+    mobPriceData = data.last_30_candles;
+    updateMobStats(data);
+    renderMobCanvas();
+  } catch (e) { console.warn("price fetch", e); }
 }
+
+function setMobChartType(type) {
+  mobChartType = type;
+  document.querySelectorAll(".mob-ctype-btn").forEach((b, i) => {
+    b.classList.toggle("active", ["candles","hollow","bars","line"][i] === type);
+  });
+  renderMobCanvas();
+}
+
+function renderMobCanvas() {
+  const canvas = document.getElementById("mob-canvas");
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth;
+  const H = canvas.offsetHeight;
+  if (!W || !H) return;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+
+  if (!mobPriceData || !mobPriceData.length) {
+    ctx.fillStyle = "#6e7681";
+    ctx.font = "13px -apple-system,sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Enter a ticker above to load the chart", W / 2, H / 2);
+    return;
+  }
+
+  const data = mobPriceData;
+  const n = data.length;
+  const PAD_T = 12, PAD_R = 54, PAD_B = 52, PAD_L = 6;
+  const VOL_H = 36;
+  const CHART_H = H - PAD_T - PAD_B;
+  const PRICE_H = CHART_H - VOL_H - 6;
+
+  const maxP = Math.max(...data.map(d => d.high));
+  const minP = Math.min(...data.map(d => d.low));
+  const pad  = (maxP - minP) * 0.06;
+  const pMax = maxP + pad, pMin = minP - pad, pRange = pMax - pMin;
+  const maxVol = Math.max(...data.map(d => d.volume));
+
+  const xOf   = i => PAD_L + (i + 0.5) * (W - PAD_L - PAD_R) / n;
+  const pY    = p => PAD_T + PRICE_H * (1 - (p - pMin) / pRange);
+  const volY  = v => H - PAD_B + 6 + VOL_H * (1 - v / maxVol);
+  const barW  = Math.max(2, (W - PAD_L - PAD_R) / n * 0.72);
+
+  // Grid + price labels
+  ctx.font = "10px -apple-system,sans-serif";
+  for (let i = 0; i <= 4; i++) {
+    const p = pMin + pRange * i / 4;
+    const y = pY(p);
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    ctx.fillStyle = "#6e7681"; ctx.textAlign = "left";
+    ctx.fillText("$" + p.toFixed(0), W - PAD_R + 4, y + 4);
+  }
+
+  // Volume bars
+  data.forEach((d, i) => {
+    ctx.fillStyle = d.close >= d.open ? "rgba(63,185,80,0.35)" : "rgba(248,81,73,0.35)";
+    const bh = (1 - d.volume / maxVol) * VOL_H;
+    ctx.fillRect(xOf(i) - barW * 0.4, H - PAD_B + 6 + bh, barW * 0.8, VOL_H - bh);
+  });
+
+  // Price chart
+  if (mobChartType === "line") {
+    ctx.beginPath(); ctx.strokeStyle = "#3fb950"; ctx.lineWidth = 1.8; ctx.lineJoin = "round";
+    data.forEach((d, i) => { const x = xOf(i), y = pY(d.close); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); });
+    ctx.stroke();
+    // Area fill
+    ctx.beginPath();
+    data.forEach((d, i) => { const x = xOf(i), y = pY(d.close); i ? ctx.lineTo(x,y) : ctx.moveTo(x,y); });
+    ctx.lineTo(xOf(n-1), pY(pMin)); ctx.lineTo(xOf(0), pY(pMin)); ctx.closePath();
+    const g = ctx.createLinearGradient(0, PAD_T, 0, PAD_T + PRICE_H);
+    g.addColorStop(0, "rgba(63,185,80,0.22)"); g.addColorStop(1, "rgba(63,185,80,0)");
+    ctx.fillStyle = g; ctx.fill();
+
+  } else if (mobChartType === "bars") {
+    data.forEach((d, i) => {
+      const x = xOf(i); const col = d.close >= d.open ? "#3fb950" : "#f85149";
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x, pY(d.high)); ctx.lineTo(x, pY(d.low)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - barW/2, pY(d.open)); ctx.lineTo(x, pY(d.open)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, pY(d.close)); ctx.lineTo(x + barW/2, pY(d.close)); ctx.stroke();
+    });
+
+  } else {
+    const hollow = mobChartType === "hollow";
+    data.forEach((d, i) => {
+      const isUp = d.close >= d.open;
+      const col  = isUp ? "#3fb950" : "#f85149";
+      const x = xOf(i);
+      const bodyTop = pY(Math.max(d.open, d.close));
+      const bodyH   = Math.max(1, Math.abs(pY(d.open) - pY(d.close)));
+      // Wicks
+      ctx.strokeStyle = col; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, pY(d.high)); ctx.lineTo(x, bodyTop);
+      ctx.moveTo(x, bodyTop + bodyH); ctx.lineTo(x, pY(d.low));
+      ctx.stroke();
+      // Body
+      if (hollow && isUp) {
+        ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+        ctx.strokeRect(x - barW/2, bodyTop, barW, bodyH);
+      } else {
+        ctx.fillStyle = col; ctx.fillRect(x - barW/2, bodyTop, barW, bodyH);
+      }
+    });
+  }
+
+  // Date labels
+  ctx.fillStyle = "#6e7681"; ctx.font = "10px -apple-system,sans-serif"; ctx.textAlign = "center";
+  const step = Math.ceil(n / 6);
+  for (let i = 0; i < n; i += step) {
+    ctx.fillText(data[i].date.slice(5).replace("-","/"), xOf(i), H - PAD_B + 8 + VOL_H + 10);
+  }
+
+  // Crosshair tooltip on touch
+  if (mobTouchIdx !== null) {
+    const d = data[mobTouchIdx], x = xOf(mobTouchIdx);
+    ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+    ctx.setLineDash([]);
+    const TW = 148, TH = 76;
+    let tx = x + 10; if (tx + TW > W - PAD_R) tx = x - TW - 10;
+    const ty = PAD_T + 4;
+    ctx.fillStyle = "rgba(15,23,42,0.95)"; ctx.strokeStyle = "rgba(88,166,255,0.4)"; ctx.lineWidth = 1;
+    _roundRect(ctx, tx, ty, TW, TH, 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#8b949e"; ctx.font = "10px -apple-system,sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(d.date, tx+8, ty+14);
+    ctx.fillStyle = "#e6edf3"; ctx.font = "11px -apple-system,sans-serif";
+    ctx.fillText(`O:${d.open}  H:${d.high}`, tx+8, ty+30);
+    ctx.fillText(`L:${d.low}  C:${d.close}`, tx+8, ty+46);
+    const chg = ((d.close-d.open)/d.open*100).toFixed(2);
+    ctx.fillStyle = d.close>=d.open ? "#3fb950" : "#f85149";
+    ctx.fillText(`${d.close>=d.open?"+":""}${chg}%  Vol:${(d.volume/1e6).toFixed(1)}M`, tx+8, ty+62);
+  }
+}
+
+function _roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+
+// Touch crosshair
+(function() {
+  function getIdx(e) {
+    if (!mobPriceData) return null;
+    const canvas = document.getElementById("mob-canvas");
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches[0];
+    const x = t.clientX - rect.left;
+    const n = mobPriceData.length;
+    const PAD_L = 6, PAD_R = 54;
+    return Math.max(0, Math.min(n-1, Math.round((x - PAD_L) / (rect.width - PAD_L - PAD_R) * n - 0.5)));
+  }
+  document.addEventListener("touchstart", e => {
+    if (e.target.id === "mob-canvas") { mobTouchIdx = getIdx(e); renderMobCanvas(); }
+  }, { passive: true });
+  document.addEventListener("touchmove", e => {
+    if (e.target.id === "mob-canvas") { mobTouchIdx = getIdx(e); renderMobCanvas(); }
+  }, { passive: true });
+  document.addEventListener("touchend", e => {
+    if (e.target.id === "mob-canvas") { setTimeout(() => { mobTouchIdx = null; renderMobCanvas(); }, 1800); }
+  });
+})();
+
+window.addEventListener("resize", () => { if (window.innerWidth <= 768) renderMobCanvas(); });
 
 function updateMobStats(data) {
   document.getElementById("mob-price-row").style.display = "flex";
@@ -1684,6 +1863,7 @@ function runMobAnalysis() {
   const ticker = document.getElementById("mob-ticker").value.trim().toUpperCase();
   if (!ticker) return;
   document.getElementById("ticker-input").value = ticker;
+  fetchMobPrice(ticker); // draw chart immediately, no need to wait for analysis
   // Reset analysis tab
   document.getElementById("mob-a-placeholder").style.display = "none";
   document.getElementById("mob-streaming").style.display = "flex";
@@ -1744,7 +1924,7 @@ async function loadMobFromHistory(id, ticker) {
     document.getElementById("mob-cards").innerHTML = "";
     document.getElementById("mob-verdict-row").style.display = "none";
     showMobAnalysisDone(data.analysis_text);
-    loadMobChart(ticker);
+    fetchMobPrice(ticker);
   } catch { alert("Failed to load analysis."); }
 }
 
@@ -1766,7 +1946,7 @@ document.addEventListener("touchstart", (e) => {
 });
 
 // Init mobile chart on page load
-if (window.innerWidth <= 768) loadMobChart("NASDAQ:AAPL");
+if (window.innerWidth <= 768) fetchMobPrice("AAPL");
 
 // Load default chart
 loadChart("NASDAQ:AAPL");
