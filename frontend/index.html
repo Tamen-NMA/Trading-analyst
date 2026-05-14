@@ -701,9 +701,42 @@
   /* Analysis tab */
   .mob-a-placeholder { color:#6e7681; font-size:14px; text-align:center; padding:56px 16px; display:flex; flex-direction:column; align-items:center; gap:12px; }
   .mob-a-placeholder .pi { font-size:40px; opacity:.35; }
-  .mob-streaming { display:flex; align-items:center; gap:10px; color:#8b949e; font-size:13px; padding:16px 0 10px; }
 
+  /* Streaming view */
+  #mob-streaming-view { display:none; }
+  .mob-stream-header { display:flex; align-items:center; gap:10px; color:#8b949e; font-size:12px; padding:12px 0 10px; border-bottom:1px solid rgba(255,255,255,0.07); margin-bottom:12px; }
+
+  /* Progressive markdown text while streaming */
+  .mob-analysis-md { font-size:13px; line-height:1.65; color:#c9d1d9; }
+  .mob-analysis-md h2 { font-size:12px; font-weight:700; color:#58a6ff; margin:14px 0 5px; padding-bottom:3px; border-bottom:1px solid rgba(255,255,255,0.07); text-transform:uppercase; letter-spacing:.5px; }
+  .mob-analysis-md p { margin-bottom:8px; }
+  .mob-analysis-md strong { color:#e6edf3; }
+  .mob-analysis-md ul,.mob-analysis-md ol { padding-left:16px; margin-bottom:8px; }
+  .mob-analysis-md li { margin-bottom:3px; }
+  .mob-analysis-md hr { border:none; border-top:1px solid rgba(255,255,255,0.07); margin:10px 0; }
+  .mob-analysis-md em { color:#6e7681; font-size:11px; }
+
+  /* Summary view */
+  #mob-summary-view { display:none; }
   .mob-verdict-row { padding: 0 0 12px; }
+
+  /* Trade plan divider above entry/exit/R-R rows */
+  .mob-trade-divider {
+    font-size:10px; font-weight:700; color:#58a6ff; text-transform:uppercase;
+    letter-spacing:.8px; margin:14px 0 8px; padding-bottom:4px;
+    border-bottom:1px solid rgba(88,166,255,0.2);
+  }
+
+  /* kp-row colours adapted for gradient mobile background */
+  @media (max-width:768px) {
+    .kp-row               { background:rgba(255,255,255,0.04) !important; }
+    .kp-row.bull          { background:rgba(63,185,80,0.07) !important; }
+    .kp-row.bear          { background:rgba(248,81,73,0.07) !important; }
+    .kp-row.warn          { background:rgba(210,153,34,0.07) !important; }
+    .kp-row.muted         { background:rgba(255,255,255,0.04) !important; }
+    .kp-row.entry         { background:rgba(210,153,34,0.07) !important; }
+    .kp-row.exit          { background:rgba(248,81,73,0.07) !important; }
+  }
 
   .mob-card {
     background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px;
@@ -1037,18 +1070,30 @@
 
   <!-- Analysis tab -->
   <div class="mob-tab-content" id="mob-analysis-tab" style="display:none">
+
+    <!-- Placeholder -->
     <div class="mob-a-placeholder" id="mob-a-placeholder">
       <div class="pi">🔍</div>
       <p>Enter a ticker above to run analysis</p>
     </div>
-    <div class="mob-streaming" id="mob-streaming" style="display:none">
-      <div class="spinner active"></div>
-      <span>Searching web &amp; analyzing…</span>
+
+    <!-- Streaming view: progressive markdown text -->
+    <div id="mob-streaming-view">
+      <div class="mob-stream-header">
+        <div class="spinner active"></div>
+        <span id="mob-stream-status">Searching web &amp; analyzing…</span>
+      </div>
+      <div id="mob-streaming-text" class="mob-analysis-md"></div>
     </div>
-    <div class="mob-verdict-row" id="mob-verdict-row" style="display:none">
-      <div class="verdict-badge" id="mob-verdict-badge"></div>
+
+    <!-- Summary view: section cards + trade plan rows -->
+    <div id="mob-summary-view">
+      <div class="mob-verdict-row" id="mob-verdict-row" style="display:none">
+        <div class="verdict-badge" id="mob-verdict-badge"></div>
+      </div>
+      <div id="mob-cards"></div>
     </div>
-    <div id="mob-cards"></div>
+
     <div class="mob-error-box" id="mob-error-box" style="display:none"></div>
   </div>
 
@@ -1218,6 +1263,9 @@ function runAnalysis() {
       body.scrollTop = body.scrollHeight;
       const v = extractVerdict(rawText);
       if (v) showVerdict(v);
+      // Mobile: update streaming text progressively
+      const mobText = document.getElementById("mob-streaming-text");
+      if (mobText) { mobText.innerHTML = marked.parse(rawText); mobText.scrollTop = mobText.scrollHeight; }
       return;
     }
 
@@ -1249,7 +1297,7 @@ function runAnalysis() {
       document.getElementById("mob-analyze-btn").disabled = false;
       document.getElementById("mob-spinner").classList.remove("active");
       document.getElementById("mob-status-text").textContent = "";
-      document.getElementById("mob-streaming").style.display = "none";
+      document.getElementById("mob-streaming-view").style.display = "none";
       const me = document.getElementById("mob-error-box");
       me.textContent = "Error: " + msg.content;
       me.style.display = "block";
@@ -1265,7 +1313,7 @@ function runAnalysis() {
     document.getElementById("mob-analyze-btn").disabled = false;
     document.getElementById("mob-spinner").classList.remove("active");
     document.getElementById("mob-status-text").textContent = "";
-    document.getElementById("mob-streaming").style.display = "none";
+    document.getElementById("mob-streaming-view").style.display = "none";
   };
 }
 
@@ -1842,7 +1890,7 @@ const MOB_SECTIONS = [
 ];
 
 function buildMobCards(text) {
-  return MOB_SECTIONS.map(({ key, badge, cls }) => {
+  let html = MOB_SECTIONS.map(({ key, badge, cls }) => {
     const val = extract(text, key);
     if (!val) return "";
     const clean = val.replace(/\*\*/g, "").replace(/\n-\s/g, "\n• ").trim();
@@ -1851,11 +1899,60 @@ function buildMobCards(text) {
       <div class="mob-card-text">${clean.replace(/\n/g, "<br>")}</div>
     </div>`;
   }).join("");
+
+  // Entry / Exit / Risk-Reward as highlighted kp-rows (same conditional colours as desktop)
+  const setup = extract(text, "TRADE SETUP");
+  const rrSource = setup || text;
+  let tradeRows = "";
+
+  if (setup) {
+    const entryMatch = setup.match(/Entry[^:]*:\s*([^\n]+)/i);
+    const stopMatch  = setup.match(/Stop[^:]*:\s*([^\n]+)/i);
+    const entry = entryMatch ? entryMatch[1].replace(/\*+/g, "").trim() : "";
+    const stop  = stopMatch  ? stopMatch[1].replace(/\*+/g, "").trim() : "";
+    if (entry) tradeRows += `<div class="kp-row entry">
+      <div class="kp-icon">🎯</div>
+      <div class="kp-text">
+        <div class="kp-label">Entry Trigger — wait for this</div>
+        <div class="kp-value">${entry}</div>
+      </div>
+    </div>`;
+    if (stop) tradeRows += `<div class="kp-row exit">
+      <div class="kp-icon">🛑</div>
+      <div class="kp-text">
+        <div class="kp-label">Exit / Stop Loss — if breached, close immediately</div>
+        <div class="kp-value">${stop}</div>
+      </div>
+    </div>`;
+  }
+
+  const rrMatch = rrSource.match(/Risk[\/\-]?Reward[^:]*:\s*([^\n]+)/i);
+  if (rrMatch) {
+    const rrRaw    = rrMatch[1].replace(/\*+/g, "").trim();
+    const numMatch = rrRaw.match(/(\d+\.?\d*)\s*[:x]/i);
+    const ratio    = numMatch ? parseFloat(numMatch[1]) : null;
+    const cls  = ratio === null ? "muted" : ratio >= 2 ? "bull" : ratio >= 1 ? "warn" : "bear";
+    const icon = cls === "bull" ? "💰" : cls === "warn" ? "⚖️" : "⚠️";
+    const desc = ratio !== null
+      ? `${rrRaw} — ${ratio >= 2 ? "Favourable" : ratio >= 1 ? "Marginal — wait for better setup" : "Poor — do not take this trade"}`
+      : rrRaw;
+    tradeRows += `<div class="kp-row ${cls}">
+      <div class="kp-icon">${icon}</div>
+      <div class="kp-text">
+        <div class="kp-label">Risk / Reward</div>
+        <div class="kp-value">${desc}</div>
+      </div>
+    </div>`;
+  }
+
+  if (tradeRows) html += `<div class="mob-trade-divider">⚡ Trade Plan</div>${tradeRows}`;
+  return html;
 }
 
 function showMobAnalysisDone(text) {
   document.getElementById("mob-a-placeholder").style.display = "none";
-  document.getElementById("mob-streaming").style.display = "none";
+  document.getElementById("mob-streaming-view").style.display = "none";
+  document.getElementById("mob-summary-view").style.display = "block";
   const v = extractVerdict(text);
   if (v) {
     const vb = document.getElementById("mob-verdict-badge");
@@ -1873,7 +1970,9 @@ function runMobAnalysis() {
   fetchMobPrice(ticker); // draw chart immediately, no need to wait for analysis
   // Reset analysis tab
   document.getElementById("mob-a-placeholder").style.display = "none";
-  document.getElementById("mob-streaming").style.display = "flex";
+  document.getElementById("mob-streaming-view").style.display = "block";
+  document.getElementById("mob-streaming-text").innerHTML = "";
+  document.getElementById("mob-summary-view").style.display = "none";
   document.getElementById("mob-cards").innerHTML = "";
   document.getElementById("mob-verdict-row").style.display = "none";
   document.getElementById("mob-error-box").style.display = "none";
@@ -1927,7 +2026,7 @@ async function loadMobFromHistory(id, ticker) {
     document.getElementById("mob-ticker").value = ticker;
     setMobTab("analysis");
     document.getElementById("mob-a-placeholder").style.display = "none";
-    document.getElementById("mob-streaming").style.display = "none";
+    document.getElementById("mob-streaming-view").style.display = "none";
     document.getElementById("mob-cards").innerHTML = "";
     document.getElementById("mob-verdict-row").style.display = "none";
     showMobAnalysisDone(data.analysis_text);
