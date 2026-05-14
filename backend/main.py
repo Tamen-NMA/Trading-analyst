@@ -11,7 +11,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 import yfinance as yf
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
@@ -54,9 +54,11 @@ def init_db():
                         analysis_text TEXT NOT NULL,
                         price         REAL,
                         daily_change  REAL,
-                        verdict       TEXT
+                        verdict       TEXT,
+                        user_ip       TEXT
                     )
                 """)
+                cur.execute("ALTER TABLE analyses ADD COLUMN IF NOT EXISTS user_ip TEXT")
             conn.commit()
     else:
         with _sqlite() as conn:
@@ -68,31 +70,62 @@ def init_db():
                     analysis_text TEXT NOT NULL,
                     price         REAL,
                     daily_change  REAL,
-                    verdict       TEXT
+                    verdict       TEXT,
+                    user_ip       TEXT
                 )
             """)
+            try:
+                conn.execute("ALTER TABLE analyses ADD COLUMN user_ip TEXT")
+            except Exception:
+                pass  # column already exists
 
 @app.on_event("startup")
 async def startup():
     init_db()
 
-def save_analysis(ticker: str, text: str, price_data: dict):
-    verdict_match = re.search(r"\*\*VERDICT:\*\*\s*(BULLISH|BEARISH|NEUTRAL)", text, re.I)
-    verdict = verdict_match.group(1).upper() if verdict_match else None
-    searched_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    vals = (ticker, searched_at, text, price_data.get("current_price"), price_data.get("daily_change_pct"), verdict)
+DAILY_LIMIT = 5
+
+def get_client_ip(request: Request) -> str:
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+def count_today_analyses(ip: str) -> int:
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     if DATABASE_URL:
         with _pg() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO analyses (ticker, searched_at, analysis_text, price, daily_change, verdict) VALUES (%s,%s,%s,%s,%s,%s)",
+                    "SELECT COUNT(*) FROM analyses WHERE user_ip = %s AND searched_at LIKE %s",
+                    (ip, f"{today}%"),
+                )
+                return cur.fetchone()[0]
+    else:
+        with _sqlite() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM analyses WHERE user_ip = ? AND searched_at LIKE ?",
+                (ip, f"{today}%"),
+            ).fetchone()
+            return row[0] if row else 0
+
+def save_analysis(ticker: str, text: str, price_data: dict, user_ip: str = ""):
+    verdict_match = re.search(r"\*\*VERDICT:\*\*\s*(BULLISH|BEARISH|NEUTRAL)", text, re.I)
+    verdict = verdict_match.group(1).upper() if verdict_match else None
+    searched_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    vals = (ticker, searched_at, text, price_data.get("current_price"), price_data.get("daily_change_pct"), verdict, user_ip)
+    if DATABASE_URL:
+        with _pg() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO analyses (ticker, searched_at, analysis_text, price, daily_change, verdict, user_ip) VALUES (%s,%s,%s,%s,%s,%s,%s)",
                     vals,
                 )
             conn.commit()
     else:
         with _sqlite() as conn:
             conn.execute(
-                "INSERT INTO analyses (ticker, searched_at, analysis_text, price, daily_change, verdict) VALUES (?,?,?,?,?,?)",
+                "INSERT INTO analyses (ticker, searched_at, analysis_text, price, daily_change, verdict, user_ip) VALUES (?,?,?,?,?,?,?)",
                 vals,
             )
 
@@ -298,13 +331,9 @@ def get_price_data(ticker: str) -> dict:
 
 
 # ── Analysis endpoint ──────────────────────────────────────
-ANALYSIS_BLOCKED = True  # TODO: remove when per-user rate limiting is implemented
-
 @app.get("/analyze/{ticker}")
-async def analyze(ticker: str):
-    if ANALYSIS_BLOCKED:
-        raise HTTPException(status_code=503, detail="You have reached your daily limit.")
-
+async def analyze(ticker: str, request: Request):
+    ip = get_client_ip(request)
     ticker = ticker.upper().strip()
 
     try:
@@ -315,6 +344,12 @@ async def analyze(ticker: str):
         raise HTTPException(status_code=400, detail=str(e))
 
     async def stream():
+        used = count_today_analyses(ip)
+        if used >= DAILY_LIMIT:
+            remaining = 0
+            yield f"data: {json.dumps({'type': 'error', 'content': f'You have reached your daily limit of {DAILY_LIMIT} analyses. Come back tomorrow.'})}\n\n"
+            return
+
         yield f"data: {json.dumps({'type': 'meta', 'data': price_data})}\n\n"
 
         accumulated = []
@@ -377,7 +412,7 @@ async def analyze(ticker: str):
         # Persist to history
         full_text = "".join(accumulated)
         if full_text.strip():
-            save_analysis(ticker, full_text, price_data)
+            save_analysis(ticker, full_text, price_data, user_ip=ip)
 
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
