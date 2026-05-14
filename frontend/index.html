@@ -605,6 +605,144 @@
   .kp-row.muted .kp-label { color: #8b949e; }
   .kp-value { color: #e6edf3; font-weight: 500; word-break: break-word; }
 
+  /* ══════════════════════════════════════════
+     MOBILE VIEW  (≤ 768 px)
+     Desktop header + main are hidden; #mob-view takes over.
+  ══════════════════════════════════════════ */
+  #mob-view { display: none; }
+
+  @media (max-width: 768px) {
+    body { overflow: auto; height: auto; }
+    header, main { display: none !important; }
+    #mob-view { display: flex; flex-direction: column; min-height: 100vh; }
+    #explain-popup { right: 12px; bottom: 80px; left: auto !important; top: auto !important; max-width: calc(100vw - 24px); }
+  }
+
+  /* Header */
+  .mob-header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(13,17,23,0.96);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #21262d;
+    padding: 14px 16px 0;
+  }
+  .mob-header-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .mob-title { font-size:22px; font-weight:800; color:#e6edf3; letter-spacing:-0.5px; }
+  .mob-title span { color:#3fb950; }
+  .mob-hstatus { display:flex; align-items:center; gap:6px; font-size:11px; color:#8b949e; }
+
+  /* Search */
+  .mob-search-row { display:flex; gap:8px; margin-bottom:5px; }
+  .mob-search-row input {
+    flex:1; background:#161b22; border:1px solid #30363d; border-radius:10px;
+    color:#e6edf3; font-size:15px; font-weight:600; letter-spacing:1px;
+    outline:none; padding:10px 14px; text-transform:uppercase;
+  }
+  .mob-search-row input:focus { border-color:#58a6ff; }
+  .mob-search-row input::placeholder { color:#6e7681; font-weight:400; letter-spacing:0; text-transform:none; }
+  .mob-search-row button {
+    background:linear-gradient(135deg,#238636,#2ea043);
+    border:none; border-radius:10px; color:#fff; cursor:pointer;
+    font-size:14px; font-weight:700; padding:10px 18px; transition:opacity .2s; white-space:nowrap;
+  }
+  .mob-search-row button:disabled { opacity:.5; cursor:not-allowed; }
+  .mob-hint { color:#6e7681; font-size:11px; margin-bottom:10px; }
+
+  /* Price */
+  .mob-price-row { display:flex; align-items:baseline; gap:10px; margin-bottom:10px; }
+  .mob-price { font-size:30px; font-weight:800; color:#e6edf3; }
+  .mob-change { font-size:14px; font-weight:600; }
+  .mob-pos { color:#3fb950; } .mob-neg { color:#f85149; }
+
+  /* Tabs */
+  .mob-tabs { display:flex; }
+  .mob-tab {
+    flex:1; background:none; border:none; color:#8b949e; cursor:pointer;
+    font-size:14px; font-weight:600; padding:12px 0; position:relative; transition:color .2s;
+  }
+  .mob-tab.active { color:#e6edf3; }
+  .mob-tab.active::after {
+    content:''; position:absolute; bottom:0; left:10%; right:10%; height:2px;
+    background:linear-gradient(90deg,#3fb950,#58a6ff); border-radius:2px;
+  }
+
+  /* Tab content */
+  .mob-tab-content { flex:1; padding:14px 14px 80px; overflow-y:auto; }
+
+  /* Chart */
+  .mob-chart-box {
+    border-radius:12px; overflow:hidden; height:280px;
+    margin-bottom:14px; background:#161b22; border:1px solid #21262d;
+  }
+
+  /* Stats grid */
+  .mob-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .mob-stat { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:12px 13px; }
+  .mob-stat-label { color:#6e7681; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+  .mob-stat-value { color:#e6edf3; font-size:16px; font-weight:700; }
+  .mob-stat-value.bullish { color:#3fb950; } .mob-stat-value.bearish { color:#f85149; }
+
+  /* Analysis tab */
+  .mob-a-placeholder { color:#6e7681; font-size:14px; text-align:center; padding:56px 16px; display:flex; flex-direction:column; align-items:center; gap:12px; }
+  .mob-a-placeholder .pi { font-size:40px; opacity:.35; }
+  .mob-streaming { display:flex; align-items:center; gap:10px; color:#8b949e; font-size:13px; padding:16px 0 10px; }
+
+  .mob-verdict-row { padding: 0 0 12px; }
+
+  .mob-card {
+    background:#161b22; border:1px solid #21262d; border-radius:12px;
+    margin-bottom:10px; padding:14px;
+  }
+  .mob-card-badge {
+    display:inline-block;
+    background:rgba(63,185,80,.15); border:1px solid rgba(63,185,80,.3);
+    border-radius:6px; color:#3fb950; font-size:10px; font-weight:700;
+    letter-spacing:.5px; padding:3px 8px; text-transform:uppercase; margin-bottom:10px;
+  }
+  .mob-card-text { color:#c9d1d9; font-size:13px; line-height:1.65; }
+  .mob-card-text strong { color:#e6edf3; }
+  .mob-card.trade .mob-card-badge { background:rgba(88,166,255,.15); border-color:rgba(88,166,255,.3); color:#58a6ff; }
+  .mob-card.trade { border-color:rgba(88,166,255,.15); }
+
+  .mob-error-box {
+    background:rgba(248,81,73,.1); border:1px solid rgba(248,81,73,.3);
+    border-radius:10px; color:#f85149; font-size:13px; padding:12px 14px;
+  }
+
+  /* History */
+  .mob-hsearch { margin-bottom:12px; }
+  .mob-hsearch input {
+    width:100%; box-sizing:border-box;
+    background:#161b22; border:1px solid #30363d; border-radius:10px;
+    color:#e6edf3; font-size:13px; font-weight:600; letter-spacing:.5px;
+    outline:none; padding:10px 14px; text-transform:uppercase;
+  }
+  .mob-hsearch input:focus { border-color:#58a6ff; }
+  .mob-hsearch input::placeholder { text-transform:none; font-weight:400; letter-spacing:0; color:#6e7681; }
+
+  .mob-hitem {
+    background:#161b22; border:1px solid #21262d; border-radius:12px;
+    cursor:pointer; display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:8px; padding:14px 16px; transition:background .15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mob-hitem:active { background:#1c2128; }
+  .mob-hitem-left { flex:1; min-width:0; }
+  .mob-hitem-ticker { color:#e6edf3; font-size:16px; font-weight:700; margin-bottom:3px; }
+  .mob-hitem-date { color:#8b949e; font-size:11px; }
+  .mob-hitem-right { text-align:right; flex-shrink:0; }
+  .mob-hitem-pct { font-size:14px; font-weight:700; margin-bottom:2px; }
+  .mob-hitem-chg { font-size:11px; }
+  .mob-empty { color:#6e7681; font-size:13px; padding:48px 16px; text-align:center; }
+
+  /* Explain FAB */
+  #mob-explain-fab {
+    display:none; position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+    background:#388bfd; border:none; border-radius:20px; color:#fff;
+    cursor:pointer; font-size:13px; font-weight:700; padding:11px 22px;
+    z-index:500; box-shadow:0 4px 16px rgba(56,139,253,.45); white-space:nowrap;
+  }
+
   /* ── Explain context menu ── */
   #explain-menu {
     position: fixed;
@@ -831,6 +969,77 @@
   </div>
 </main>
 
+<!-- ══ MOBILE VIEW ══ -->
+<div id="mob-view">
+
+  <div class="mob-header">
+    <div class="mob-header-top">
+      <h1 class="mob-title">McAllen <span>Analyst</span></h1>
+      <div class="mob-hstatus">
+        <div class="spinner" id="mob-spinner"></div>
+        <span id="mob-status-text"></span>
+      </div>
+    </div>
+    <div class="mob-search-row">
+      <input id="mob-ticker" type="text" placeholder="Search ticker (e.g., AAPL)…" maxlength="10"
+             oninput="this.value=this.value.toUpperCase()"
+             onkeydown="if(event.key==='Enter') runMobAnalysis()" />
+      <button id="mob-analyze-btn" onclick="runMobAnalysis()">Analyze</button>
+    </div>
+    <p class="mob-hint">~$1 per analysis · check history first</p>
+    <div class="mob-price-row" id="mob-price-row" style="display:none">
+      <span class="mob-price" id="mob-price">$0.00</span>
+      <span class="mob-change" id="mob-change-tag"></span>
+    </div>
+    <div class="mob-tabs">
+      <button class="mob-tab active" id="mob-tab-chart"    onclick="setMobTab('chart')">Chart</button>
+      <button class="mob-tab"        id="mob-tab-analysis" onclick="setMobTab('analysis')">Analysis</button>
+      <button class="mob-tab"        id="mob-tab-history"  onclick="setMobTab('history')">History</button>
+    </div>
+  </div>
+
+  <!-- Chart tab -->
+  <div class="mob-tab-content" id="mob-chart-tab">
+    <div class="mob-chart-box" id="mob-tv-container"></div>
+    <div class="mob-stats-grid" id="mob-stats-grid" style="display:none">
+      <div class="mob-stat"><div class="mob-stat-label">Price</div><div class="mob-stat-value" id="mob-s-price">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">52W High</div><div class="mob-stat-value" id="mob-s-52h">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">52W Low</div><div class="mob-stat-value" id="mob-s-52l">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">Volume</div><div class="mob-stat-value" id="mob-s-vol">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">vs MA200</div><div class="mob-stat-value" id="mob-s-ma200">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">vs MA50</div><div class="mob-stat-value" id="mob-s-ma50">—</div></div>
+    </div>
+  </div>
+
+  <!-- Analysis tab -->
+  <div class="mob-tab-content" id="mob-analysis-tab" style="display:none">
+    <div class="mob-a-placeholder" id="mob-a-placeholder">
+      <div class="pi">🔍</div>
+      <p>Enter a ticker above to run analysis</p>
+    </div>
+    <div class="mob-streaming" id="mob-streaming" style="display:none">
+      <div class="spinner active"></div>
+      <span>Searching web &amp; analyzing…</span>
+    </div>
+    <div class="mob-verdict-row" id="mob-verdict-row" style="display:none">
+      <div class="verdict-badge" id="mob-verdict-badge"></div>
+    </div>
+    <div id="mob-cards"></div>
+    <div class="mob-error-box" id="mob-error-box" style="display:none"></div>
+  </div>
+
+  <!-- History tab -->
+  <div class="mob-tab-content" id="mob-history-tab" style="display:none">
+    <div class="mob-hsearch">
+      <input type="text" placeholder="Search ticker…" id="mob-hsearch-input"
+             oninput="filterMobHistory(this.value)" />
+    </div>
+    <div id="mob-hlist"><div class="mob-empty">No saved analyses yet.</div></div>
+  </div>
+
+  <button id="mob-explain-fab" onclick="triggerExplain()">💡 Explain</button>
+</div>
+
 <!-- Explain context menu -->
 <div id="explain-menu">
   <button onclick="triggerExplain()">💡 Explain for dummies</button>
@@ -972,16 +1181,16 @@ function runAnalysis() {
 
     if (msg.type === "meta") {
       updateStats(msg.data);
+      updateMobStats(msg.data);
+      loadMobChart(ticker);
       return;
     }
 
     if (msg.type === "text") {
       rawText += msg.content;
       document.getElementById("analysis-content").innerHTML = marked.parse(rawText);
-      // Auto-scroll
       const body = document.getElementById("analysis-body");
       body.scrollTop = body.scrollHeight;
-
       const v = extractVerdict(rawText);
       if (v) showVerdict(v);
       return;
@@ -995,6 +1204,11 @@ function runAnalysis() {
       document.getElementById("status-text").textContent = "Analysis complete";
       setTimeout(() => document.getElementById("status-text").textContent = "", 3000);
       showTakeaways(rawText);
+      // Mobile
+      document.getElementById("mob-analyze-btn").disabled = false;
+      document.getElementById("mob-spinner").classList.remove("active");
+      document.getElementById("mob-status-text").textContent = "";
+      showMobAnalysisDone(rawText);
       return;
     }
 
@@ -1006,6 +1220,14 @@ function runAnalysis() {
       document.getElementById("status-text").textContent = "";
       document.getElementById("error-box").textContent = "Error: " + msg.content;
       document.getElementById("error-box").classList.add("visible");
+      // Mobile
+      document.getElementById("mob-analyze-btn").disabled = false;
+      document.getElementById("mob-spinner").classList.remove("active");
+      document.getElementById("mob-status-text").textContent = "";
+      document.getElementById("mob-streaming").style.display = "none";
+      const me = document.getElementById("mob-error-box");
+      me.textContent = "Error: " + msg.content;
+      me.style.display = "block";
     }
   };
 
@@ -1015,6 +1237,10 @@ function runAnalysis() {
     document.getElementById("analyze-btn").disabled = false;
     document.getElementById("spinner").classList.remove("active");
     document.getElementById("status-text").textContent = "";
+    document.getElementById("mob-analyze-btn").disabled = false;
+    document.getElementById("mob-spinner").classList.remove("active");
+    document.getElementById("mob-status-text").textContent = "";
+    document.getElementById("mob-streaming").style.display = "none";
   };
 }
 
@@ -1349,7 +1575,197 @@ async function triggerExplain() {
 
 function closeExplain() {
   document.getElementById("explain-popup").classList.remove("visible");
+  document.getElementById("mob-explain-fab").style.display = "none";
 }
+
+// ── Mobile view ───────────────────────────────────────────
+let mobTvWidget = null;
+let mobHistoryCache = [];
+
+function setMobTab(tab) {
+  ["chart","analysis","history"].forEach(t => {
+    document.getElementById(`mob-${t}-tab`).style.display = t === tab ? "block" : "none";
+    document.getElementById(`mob-tab-${t}`).classList.toggle("active", t === tab);
+  });
+  if (tab === "history") loadMobHistory();
+}
+
+function loadMobChart(ticker) {
+  if (window.innerWidth > 768) return;
+  const c = document.getElementById("mob-tv-container");
+  if (!c) return;
+  if (mobTvWidget) { mobTvWidget.remove(); mobTvWidget = null; }
+  c.innerHTML = "";
+  mobTvWidget = new TradingView.widget({
+    container_id: "mob-tv-container",
+    symbol: ticker,
+    interval: "D",
+    timezone: "Etc/UTC",
+    theme: "dark",
+    style: "1",
+    locale: "en",
+    toolbar_bg: "#161b22",
+    enable_publishing: false,
+    hide_top_toolbar: false,
+    hide_side_toolbar: true,
+    allow_symbol_change: false,
+    save_image: false,
+    width: "100%",
+    height: "100%",
+    studies: ["MASimple@tv-scriptstd;length=50","MASimple@tv-scriptstd;length=200"],
+    overrides: {
+      "mainSeriesProperties.candleStyle.upColor": "#3fb950",
+      "mainSeriesProperties.candleStyle.downColor": "#f85149",
+      "mainSeriesProperties.candleStyle.wickUpColor": "#3fb950",
+      "mainSeriesProperties.candleStyle.wickDownColor": "#f85149",
+    },
+  });
+}
+
+function updateMobStats(data) {
+  document.getElementById("mob-price-row").style.display = "flex";
+  document.getElementById("mob-price").textContent = `$${data.current_price}`;
+  const chg = data.daily_change_pct;
+  const chgEl = document.getElementById("mob-change-tag");
+  chgEl.textContent = `${chg >= 0 ? "+" : ""}$${Math.abs((data.current_price * chg / 100)).toFixed(2)} (${chg >= 0 ? "+" : ""}${chg}%)`;
+  chgEl.className = "mob-change " + (chg >= 0 ? "mob-pos" : "mob-neg");
+  document.getElementById("mob-stats-grid").style.display = "grid";
+  document.getElementById("mob-s-price").textContent = `$${data.current_price}`;
+  document.getElementById("mob-s-52h").textContent   = `$${data["52w_high"]}`;
+  document.getElementById("mob-s-52l").textContent   = `$${data["52w_low"]}`;
+  document.getElementById("mob-s-vol").textContent   = data.volume_ratio;
+  const ma200 = document.getElementById("mob-s-ma200");
+  ma200.textContent  = data.price_vs_ma200 === "above" ? "▲ Above" : "▼ Below";
+  ma200.className    = "mob-stat-value " + (data.price_vs_ma200 === "above" ? "bullish" : "bearish");
+  const ma50 = document.getElementById("mob-s-ma50");
+  ma50.textContent   = data.price_vs_ma50 === "above" ? "▲ Above" : "▼ Below";
+  ma50.className     = "mob-stat-value " + (data.price_vs_ma50 === "above" ? "bullish" : "bearish");
+}
+
+const MOB_SECTIONS = [
+  { key:"PRIMARY TREND",       badge:"TREND DIRECTION",      cls:"" },
+  { key:"KEY LEVELS",          badge:"SUPPORT & RESISTANCE",  cls:"" },
+  { key:"PATTERN",             badge:"PATTERN ANALYSIS",     cls:"" },
+  { key:"CANDLESTICK SIGNALS", badge:"CANDLESTICKS",         cls:"" },
+  { key:"MOVING AVERAGES",     badge:"MOVING AVERAGES",      cls:"" },
+  { key:"VOLUME",              badge:"VOLUME",               cls:"" },
+  { key:"FUNDAMENTALS",        badge:"FUNDAMENTALS",         cls:"" },
+  { key:"MACRO CONTEXT",       badge:"MACRO CONTEXT",        cls:"" },
+  { key:"TRADE SETUP",         badge:"TRADE SETUP",          cls:"trade" },
+];
+
+function buildMobCards(text) {
+  return MOB_SECTIONS.map(({ key, badge, cls }) => {
+    const val = extract(text, key);
+    if (!val) return "";
+    const clean = val.replace(/\*\*/g, "").replace(/\n-\s/g, "\n• ").trim();
+    return `<div class="mob-card ${cls}">
+      <div class="mob-card-badge">${badge}</div>
+      <div class="mob-card-text">${clean.replace(/\n/g, "<br>")}</div>
+    </div>`;
+  }).join("");
+}
+
+function showMobAnalysisDone(text) {
+  document.getElementById("mob-a-placeholder").style.display = "none";
+  document.getElementById("mob-streaming").style.display = "none";
+  const v = extractVerdict(text);
+  if (v) {
+    const vb = document.getElementById("mob-verdict-badge");
+    vb.textContent = `${v.emoji} ${v.verdict}`;
+    vb.className = `verdict-badge verdict-${v.cls}`;
+    document.getElementById("mob-verdict-row").style.display = "block";
+  }
+  document.getElementById("mob-cards").innerHTML = buildMobCards(text);
+}
+
+function runMobAnalysis() {
+  const ticker = document.getElementById("mob-ticker").value.trim().toUpperCase();
+  if (!ticker) return;
+  document.getElementById("ticker-input").value = ticker;
+  // Reset analysis tab
+  document.getElementById("mob-a-placeholder").style.display = "none";
+  document.getElementById("mob-streaming").style.display = "flex";
+  document.getElementById("mob-cards").innerHTML = "";
+  document.getElementById("mob-verdict-row").style.display = "none";
+  document.getElementById("mob-error-box").style.display = "none";
+  document.getElementById("mob-analyze-btn").disabled = true;
+  document.getElementById("mob-spinner").classList.add("active");
+  document.getElementById("mob-status-text").textContent = "Analyzing…";
+  setMobTab("analysis");
+  runAnalysis();
+}
+
+async function loadMobHistory() {
+  try {
+    const res = await fetch(`${API_BASE}/history`);
+    mobHistoryCache = await res.json();
+    renderMobHistory(mobHistoryCache);
+  } catch {
+    document.getElementById("mob-hlist").innerHTML = '<div class="mob-empty">Error loading history.</div>';
+  }
+}
+
+function filterMobHistory(q) {
+  const query = q.trim().toUpperCase();
+  renderMobHistory(query ? mobHistoryCache.filter(i => i.ticker.includes(query)) : mobHistoryCache);
+}
+
+function renderMobHistory(items) {
+  const list = document.getElementById("mob-hlist");
+  if (!items.length) { list.innerHTML = '<div class="mob-empty">No results found.</div>'; return; }
+  list.innerHTML = items.map(item => {
+    const chg = item.daily_change;
+    const pos = chg === null || chg >= 0;
+    const pct  = chg !== null ? `${pos ? "+" : ""}${chg.toFixed(2)}%` : "—";
+    const usd  = item.price && chg !== null ? `${pos ? "+" : ""}$${Math.abs(chg).toFixed(2)}` : "";
+    return `<div class="mob-hitem" onclick="loadMobFromHistory(${item.id},'${item.ticker}')">
+      <div class="mob-hitem-left">
+        <div class="mob-hitem-ticker">${item.ticker}</div>
+        <div class="mob-hitem-date">${item.searched_at}</div>
+      </div>
+      <div class="mob-hitem-right">
+        <div class="mob-hitem-pct ${pos ? "mob-pos" : "mob-neg"}">${pct}</div>
+        <div class="mob-hitem-chg ${pos ? "mob-pos" : "mob-neg"}">${usd}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function loadMobFromHistory(id, ticker) {
+  try {
+    const res = await fetch(`${API_BASE}/history/${id}`);
+    const data = await res.json();
+    document.getElementById("mob-ticker").value = ticker;
+    setMobTab("analysis");
+    document.getElementById("mob-a-placeholder").style.display = "none";
+    document.getElementById("mob-streaming").style.display = "none";
+    document.getElementById("mob-cards").innerHTML = "";
+    document.getElementById("mob-verdict-row").style.display = "none";
+    showMobAnalysisDone(data.analysis_text);
+    loadMobChart(ticker);
+  } catch { alert("Failed to load analysis."); }
+}
+
+// Explain FAB — appears when text is selected in analysis cards
+document.getElementById("mob-cards").addEventListener("touchend", () => {
+  setTimeout(() => {
+    const sel = window.getSelection().toString().trim();
+    const fab = document.getElementById("mob-explain-fab");
+    if (sel && sel.length > 3) { explainSelectedText = sel; fab.style.display = "block"; }
+    else if (!sel) fab.style.display = "none";
+  }, 150);
+});
+
+document.addEventListener("touchstart", (e) => {
+  if (!document.getElementById("mob-explain-fab").contains(e.target) &&
+      !document.getElementById("mob-cards").contains(e.target)) {
+    setTimeout(() => { if (!window.getSelection().toString()) document.getElementById("mob-explain-fab").style.display = "none"; }, 200);
+  }
+});
+
+// Init mobile chart on page load
+if (window.innerWidth <= 768) loadMobChart("NASDAQ:AAPL");
 
 // Load default chart
 loadChart("NASDAQ:AAPL");
