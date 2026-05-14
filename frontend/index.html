@@ -604,6 +604,95 @@
   .kp-row.info  .kp-label { color: #58a6ff; }
   .kp-row.muted .kp-label { color: #8b949e; }
   .kp-value { color: #e6edf3; font-weight: 500; word-break: break-word; }
+
+  /* ── Explain context menu ── */
+  #explain-menu {
+    position: fixed;
+    background: #1c2128;
+    border: 1px solid #388bfd55;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    display: none;
+    z-index: 1000;
+    overflow: hidden;
+    min-width: 180px;
+  }
+  #explain-menu.visible { display: block; }
+  #explain-menu button {
+    background: none;
+    border: none;
+    color: #c9d1d9;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    padding: 10px 14px;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s;
+  }
+  #explain-menu button:hover { background: #21262d; color: #e6edf3; }
+
+  /* ── Explain popup ── */
+  #explain-popup {
+    position: fixed;
+    background: #1c2128;
+    border: 1px solid #388bfd55;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    display: none;
+    max-width: 320px;
+    padding: 14px 16px;
+    z-index: 1001;
+  }
+  #explain-popup.visible { display: block; }
+  .explain-header {
+    align-items: center;
+    display: flex;
+    font-size: 11px;
+    font-weight: 700;
+    color: #58a6ff;
+    gap: 6px;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    justify-content: space-between;
+  }
+  .explain-close {
+    background: none;
+    border: none;
+    color: #6e7681;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+  }
+  .explain-close:hover { color: #e6edf3; }
+  .explain-quote {
+    background: #0d1117;
+    border-left: 3px solid #388bfd55;
+    border-radius: 4px;
+    color: #8b949e;
+    font-size: 11px;
+    font-style: italic;
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .explain-text {
+    color: #c9d1d9;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .explain-spinner {
+    color: #8b949e;
+    font-size: 12px;
+    text-align: center;
+    padding: 6px 0;
+  }
 </style>
 </head>
 <body>
@@ -741,6 +830,21 @@
     </div>
   </div>
 </main>
+
+<!-- Explain context menu -->
+<div id="explain-menu">
+  <button onclick="triggerExplain()">💡 Explain for dummies</button>
+</div>
+
+<!-- Explain popup -->
+<div id="explain-popup">
+  <div class="explain-header">
+    <span>💡 Plain English</span>
+    <button class="explain-close" onclick="closeExplain()">✕</button>
+  </div>
+  <div class="explain-quote" id="explain-quote"></div>
+  <div class="explain-text" id="explain-text"></div>
+</div>
 
 <!-- TradingView -->
 <script src="https://s3.tradingview.com/tv.js"></script>
@@ -1187,6 +1291,65 @@ function showTakeaways(text) {
 document.getElementById("ticker-input").addEventListener("keydown", (e) => {
   if (e.key === "Enter") runAnalysis();
 });
+
+// ── Explain for dummies ──
+let explainSelectedText = "";
+
+document.getElementById("analysis-body").addEventListener("contextmenu", (e) => {
+  const selected = window.getSelection().toString().trim();
+  if (!selected) return;
+  e.preventDefault();
+  explainSelectedText = selected;
+  const menu = document.getElementById("explain-menu");
+  menu.classList.add("visible");
+  // Keep menu inside viewport
+  const x = Math.min(e.clientX, window.innerWidth - 200);
+  const y = Math.min(e.clientY, window.innerHeight - 60);
+  menu.style.left = x + "px";
+  menu.style.top  = y + "px";
+});
+
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("explain-menu").contains(e.target)) {
+    document.getElementById("explain-menu").classList.remove("visible");
+  }
+});
+
+async function triggerExplain() {
+  document.getElementById("explain-menu").classList.remove("visible");
+  const text = explainSelectedText;
+  if (!text) return;
+
+  const popup  = document.getElementById("explain-popup");
+  const quote  = document.getElementById("explain-quote");
+  const output = document.getElementById("explain-text");
+
+  quote.textContent = text.length > 80 ? text.slice(0, 80) + "…" : text;
+  output.innerHTML  = '<div class="explain-spinner">Thinking…</div>';
+  popup.classList.add("visible");
+
+  // Position near viewport center-right
+  popup.style.right  = "24px";
+  popup.style.bottom = "24px";
+  popup.style.left   = "auto";
+  popup.style.top    = "auto";
+
+  try {
+    const res  = await fetch(`${API_BASE}/explain`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    const data = await res.json();
+    output.textContent = data.explanation || "Could not explain this term.";
+  } catch {
+    output.textContent = "Error reaching server.";
+  }
+}
+
+function closeExplain() {
+  document.getElementById("explain-popup").classList.remove("visible");
+}
 
 // Load default chart
 loadChart("NASDAQ:AAPL");

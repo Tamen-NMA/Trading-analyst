@@ -12,6 +12,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 import yfinance as yf
 import pandas as pd
 from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -394,6 +395,30 @@ async def price(ticker: str):
 @app.get("/health")
 async def health():
     return {"status": "ok", "model": "claude-opus-4-7"}
+
+
+class ExplainRequest(BaseModel):
+    text: str
+
+@app.post("/explain")
+async def explain(body: ExplainRequest):
+    text = body.text.strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="No text provided")
+    if len(text) > 1000:
+        raise HTTPException(status_code=400, detail="Selection too long")
+
+    msg = await async_client.messages.create(
+        model="claude-opus-4-7",
+        max_tokens=200,
+        system=(
+            "You are a friendly trading teacher explaining concepts to a complete beginner. "
+            "Use plain English, no jargon. Be concise: 2-3 sentences max. "
+            "Use a simple analogy if it helps. Never say 'in simple terms' or 'basically'."
+        ),
+        messages=[{"role": "user", "content": f"Explain this: {text}"}],
+    )
+    return {"explanation": msg.content[0].text}
 
 
 # Serve frontend — must be LAST so API routes take precedence
