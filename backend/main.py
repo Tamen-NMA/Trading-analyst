@@ -329,12 +329,14 @@ async def analyze(ticker: str):
             }
         ]
 
+        cached_system = [{"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}]
+
         while True:
             try:
                 async with async_client.messages.stream(
                     model="claude-opus-4-7",
                     max_tokens=4096,
-                    system=SYSTEM_PROMPT,
+                    system=cached_system,
                     tools=[{"type": "web_search_20260209", "name": "web_search"}],
                     messages=messages,
                 ) as stream_ctx:
@@ -352,7 +354,15 @@ async def analyze(ticker: str):
                     if final.stop_reason != "pause_turn":
                         break
 
-                    messages.append({"role": "assistant", "content": final.content})
+                    # Serialize content blocks and cache the last one so turn-2
+                    # re-sends turn-1 search results at ~10% of normal input cost
+                    blocks = [
+                        b.model_dump() if hasattr(b, "model_dump") else dict(b)
+                        for b in final.content
+                    ]
+                    if blocks:
+                        blocks[-1]["cache_control"] = {"type": "ephemeral"}
+                    messages.append({"role": "assistant", "content": blocks})
 
             except Exception as e:
                 yield f"data: {json.dumps({'type': 'error', 'content': str(e)})}\n\n"
