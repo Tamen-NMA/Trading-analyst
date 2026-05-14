@@ -298,8 +298,13 @@ def get_price_data(ticker: str) -> dict:
 
 
 # ── Analysis endpoint ──────────────────────────────────────
+ANALYSIS_BLOCKED = True  # TODO: remove when per-user rate limiting is implemented
+
 @app.get("/analyze/{ticker}")
 async def analyze(ticker: str):
+    if ANALYSIS_BLOCKED:
+        raise HTTPException(status_code=503, detail="You have reached your daily limit.")
+
     ticker = ticker.upper().strip()
 
     try:
