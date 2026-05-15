@@ -1505,6 +1505,22 @@ function extract(text, label) {
   return m ? m[1].trim() : null;
 }
 
+// Prefer "(preferred)" entry trigger; fall back to the LAST Entry trigger found.
+// Using last avoids picking Entry trigger A when B is the recommended one.
+function _parseEntry(setup) {
+  const preferred = setup.match(/Entry[^:]*\bpreferred\b[^:]*:\s*([^\n]+)/i);
+  if (preferred) return preferred[1].replace(/\*+/g, "").trim();
+  const all = [...setup.matchAll(/Entry[^:]*:\s*([^\n]+)/gi)];
+  if (!all.length) return "";
+  return all[all.length - 1][1].replace(/\*+/g, "").trim();
+}
+
+// Require "Stop loss" (two words) to avoid matching "stop $X" inside price text.
+function _parseStop(setup) {
+  const m = setup.match(/Stop\s+loss[^:]*:\s*([^\n]+)/i);
+  return m ? m[1].replace(/\*+/g, "").trim() : "";
+}
+
 function colorClass(text, positiveWords, negativeWords, warnWords) {
   const t = (text || "").toLowerCase();
   if (positiveWords.some(w => t.includes(w))) return "bull";
@@ -1566,14 +1582,12 @@ function buildTakeaways(text) {
   const setup = extract(text, "TRADE SETUP");
   if (setup) {
     const biasMatch   = setup.match(/Bias:\s*([^\n]+)/i);
-    const entryMatch  = setup.match(/Entry[^:]*:\s*([^\n]+)/i);
-    const stopMatch   = setup.match(/Stop[^:]*:\s*([^\n]+)/i);
     const targetMatch = setup.match(/Target:\s*([^\n]+)/i);
 
     const bias   = biasMatch   ? biasMatch[1].replace(/\*+/g, "").trim() : "";
-    const entry  = entryMatch  ? entryMatch[1].replace(/\*+/g, "").trim() : "";
-    const stop   = stopMatch   ? stopMatch[1].replace(/\*+/g, "").trim() : "";
     const target = targetMatch ? targetMatch[1].replace(/\*+/g, "").trim() : "";
+    const entry  = _parseEntry(setup);
+    const stop   = _parseStop(setup);
 
     // Bias + target row
     const cls = colorClass(bias, ["long"], ["short"], ["no trade"]);
@@ -1600,9 +1614,8 @@ function buildTakeaways(text) {
     </div>`);
   }
 
-  // 6. Risk / Reward — search within setup section to avoid false matches earlier in the text
-  const rrSource = setup || text;
-  const rrMatch = rrSource.match(/Risk[\/\-]?Reward[^:]*:\s*([^\n]+)/i);
+  // 6. Risk / Reward — setup only, never full text
+  const rrMatch = setup ? setup.match(/Risk[\s\/\-]*Reward[^:]*:\s*([^\n]+)/i) : null;
   if (rrMatch) {
     const rrRaw = rrMatch[1].replace(/\*+/g, "").trim();
     const numMatch = rrRaw.match(/(\d+\.?\d*)\s*[:x]/i);
@@ -1934,14 +1947,11 @@ function buildMobCards(text) {
 
   // Entry / Exit / Risk-Reward as highlighted kp-rows (same conditional colours as desktop)
   const setup = extract(text, "TRADE SETUP");
-  const rrSource = setup || text;
   let tradeRows = "";
 
   if (setup) {
-    const entryMatch = setup.match(/Entry[^:]*:\s*([^\n]+)/i);
-    const stopMatch  = setup.match(/Stop[^:]*:\s*([^\n]+)/i);
-    const entry = entryMatch ? entryMatch[1].replace(/\*+/g, "").trim() : "";
-    const stop  = stopMatch  ? stopMatch[1].replace(/\*+/g, "").trim() : "";
+    const entry = _parseEntry(setup);
+    const stop  = _parseStop(setup);
     if (entry) tradeRows += `<div class="kp-row entry">
       <div class="kp-icon">🎯</div>
       <div class="kp-text">
@@ -1958,7 +1968,7 @@ function buildMobCards(text) {
     </div>`;
   }
 
-  const rrMatch = rrSource.match(/Risk[\/\-]?Reward[^:]*:\s*([^\n]+)/i);
+  const rrMatch = setup ? setup.match(/Risk[\s\/\-]*Reward[^:]*:\s*([^\n]+)/i) : null;
   if (rrMatch) {
     const rrRaw    = rrMatch[1].replace(/\*+/g, "").trim();
     const numMatch = rrRaw.match(/(\d+\.?\d*)\s*[:x]/i);
