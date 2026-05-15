@@ -754,8 +754,9 @@
   .mob-card.trade { border-color:rgba(88,166,255,.15); }
 
   .mob-error-box {
-    background:rgba(248,81,73,.1); border:1px solid rgba(248,81,73,.3);
-    border-radius:10px; color:#f85149; font-size:13px; padding:12px 14px;
+    background:rgba(248,81,73,.15); border:1px solid rgba(248,81,73,.5);
+    border-radius:10px; color:#ff6b6b; font-size:14px; font-weight:500;
+    padding:16px; line-height:1.5; margin-top:8px;
   }
 
   /* History */
@@ -1234,13 +1235,44 @@ function showVerdict(v) {
   sec.classList.add("visible");
 }
 
+// ── Error display helper ──
+function showAnalysisError(msg) {
+  document.getElementById("analyze-btn").disabled = false;
+  document.getElementById("spinner").classList.remove("active");
+  document.getElementById("status-text").textContent = "";
+  // Desktop — clear content and show error at top
+  document.getElementById("analysis-content").className = "analysis-content";
+  document.getElementById("analysis-content").innerHTML = "";
+  document.getElementById("error-box").textContent = msg;
+  document.getElementById("error-box").classList.add("visible");
+  document.getElementById("analysis-body").scrollTop = 0;
+  // Mobile
+  document.getElementById("mob-analyze-btn").disabled = false;
+  document.getElementById("mob-spinner").classList.remove("active");
+  document.getElementById("mob-status-text").textContent = "";
+  document.getElementById("mob-streaming-view").style.display = "none";
+  const me = document.getElementById("mob-error-box");
+  me.textContent = msg;
+  me.style.display = "block";
+}
+
 // ── Main analysis ──
-function runAnalysis() {
+async function runAnalysis() {
   const ticker = document.getElementById("ticker-input").value.trim().toUpperCase();
   if (!ticker) return;
 
   // Cancel existing stream
   if (currentES) { currentES.close(); currentES = null; }
+
+  // Pre-flight rate limit check — avoids unreliable SSE error path
+  try {
+    const check = await fetch(`${API_BASE}/can-analyze`);
+    const quota = await check.json();
+    if (!quota.allowed) {
+      showAnalysisError(`Daily limit reached (${quota.used}/${quota.limit} analyses used). Come back tomorrow.`);
+      return;
+    }
+  } catch (_) { /* network error — let the stream attempt proceed */ }
 
   // Reset UI
   rawText = "";
@@ -1306,32 +1338,14 @@ function runAnalysis() {
     if (msg.type === "error") {
       currentES.close();
       currentES = null;
-      document.getElementById("analyze-btn").disabled = false;
-      document.getElementById("spinner").classList.remove("active");
-      document.getElementById("status-text").textContent = "";
-      document.getElementById("error-box").textContent = "Error: " + msg.content;
-      document.getElementById("error-box").classList.add("visible");
-      // Mobile
-      document.getElementById("mob-analyze-btn").disabled = false;
-      document.getElementById("mob-spinner").classList.remove("active");
-      document.getElementById("mob-status-text").textContent = "";
-      document.getElementById("mob-streaming-view").style.display = "none";
-      const me = document.getElementById("mob-error-box");
-      me.textContent = "Error: " + msg.content;
-      me.style.display = "block";
+      showAnalysisError(msg.content);
     }
   };
 
   currentES.onerror = () => {
     currentES.close();
     currentES = null;
-    document.getElementById("analyze-btn").disabled = false;
-    document.getElementById("spinner").classList.remove("active");
-    document.getElementById("status-text").textContent = "";
-    document.getElementById("mob-analyze-btn").disabled = false;
-    document.getElementById("mob-spinner").classList.remove("active");
-    document.getElementById("mob-status-text").textContent = "";
-    document.getElementById("mob-streaming-view").style.display = "none";
+    showAnalysisError("Connection error — please try again.");
   };
 }
 

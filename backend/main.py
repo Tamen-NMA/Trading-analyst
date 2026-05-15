@@ -330,6 +330,15 @@ def get_price_data(ticker: str) -> dict:
     }
 
 
+# ── Rate limit pre-flight ─────────────────────────────────
+@app.get("/can-analyze")
+async def can_analyze(request: Request):
+    ip = get_client_ip(request)
+    used = count_today_analyses(ip)
+    remaining = max(0, DAILY_LIMIT - used)
+    return {"allowed": remaining > 0, "used": used, "limit": DAILY_LIMIT, "remaining": remaining}
+
+
 # ── Analysis endpoint ──────────────────────────────────────
 @app.get("/analyze/{ticker}")
 async def analyze(ticker: str, request: Request):
