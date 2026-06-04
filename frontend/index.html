@@ -785,6 +785,22 @@
   .mob-hitem-chg { font-size:11px; }
   .mob-empty { color:#6e7681; font-size:13px; padding:48px 16px; text-align:center; }
 
+  /* ── Candle Intel Panel (Tina Logan KB) ── */
+  #mob-candle-intel { display:none; background:rgba(15,23,42,0.97); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:10px 12px; margin:6px 0 8px; }
+  .ci-pattern { font-size:13px; font-weight:700; color:#e6edf3; }
+  .ci-signal-bull { color:#3fb950; font-weight:700; font-size:12px; }
+  .ci-signal-bear { color:#f85149; font-weight:700; font-size:12px; }
+  .ci-signal-neutral { color:#8b949e; font-weight:700; font-size:12px; }
+  .ci-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; flex-wrap:wrap; }
+  .ci-chip { border-radius:5px; padding:2px 7px; font-size:10.5px; font-weight:600; border:1px solid; }
+  .ci-chip.buyers { background:rgba(63,185,80,0.12); color:#3fb950; border-color:rgba(63,185,80,0.3); }
+  .ci-chip.sellers { background:rgba(248,81,73,0.12); color:#f85149; border-color:rgba(248,81,73,0.3); }
+  .ci-chip.contested { background:rgba(139,148,158,0.12); color:#8b949e; border-color:rgba(139,148,158,0.3); }
+  .ci-chip.institutional { background:rgba(88,166,255,0.12); color:#58a6ff; border-color:rgba(88,166,255,0.3); }
+  .ci-chip.retail { background:rgba(210,153,34,0.12); color:#d29922; border-color:rgba(210,153,34,0.3); }
+  .ci-chip.mixed { background:rgba(139,148,158,0.08); color:#8b949e; border-color:rgba(139,148,158,0.2); }
+  .ci-msg { color:#c9d1d9; line-height:1.5; font-size:11.5px; }
+
   /* Explain FAB */
   #mob-explain-fab {
     display:none; position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
@@ -1077,6 +1093,7 @@
       </div>
       <canvas id="mob-canvas"></canvas>
     </div>
+    <div id="mob-candle-intel"></div>
     <div class="mob-stats-grid" id="mob-stats-grid" style="display:none">
       <div class="mob-stat"><div class="mob-stat-label">Price</div><div class="mob-stat-value" id="mob-s-price">—</div></div>
       <div class="mob-stat"><div class="mob-stat-label">52W High</div><div class="mob-stat-value" id="mob-s-52h">—</div></div>
@@ -1737,6 +1754,210 @@ function setMobChartType(type) {
   renderMobCanvas();
 }
 
+// ── Tina Logan Candlestick Knowledge Base ─────────────────
+function analyzeCandleIntel(data, idx) {
+  if (!data || idx < 0 || idx >= data.length) return null;
+  const c  = data[idx];
+  const p1 = idx > 0 ? data[idx-1] : null;
+  const p2 = idx > 1 ? data[idx-2] : null;
+
+  const range   = c.high - c.low || 0.001;
+  const body    = Math.abs(c.close - c.open);
+  const isGreen = c.close >= c.open;
+  const bodyTop = Math.max(c.open, c.close);
+  const bodyBot = Math.min(c.open, c.close);
+  const upperSh = c.high  - bodyTop;
+  const lowerSh = bodyBot - c.low;
+
+  const lb      = data.slice(Math.max(0, idx-20), idx+1);
+  const avgBody = lb.reduce((s,d)=>s+Math.abs(d.close-d.open),0)/lb.length || 0.001;
+  const avgVol  = lb.reduce((s,d)=>s+d.volume,0)/lb.length || 1;
+
+  const isLong    = body >= avgBody * 1.6;
+  const isShort   = body <= avgBody * 0.45;
+  const isDoji    = range > 0 && body/range < 0.06;
+  const isSpin    = !isDoji && body <= avgBody*0.5 && upperSh > body*0.8 && lowerSh > body*0.8;
+  const longUpper = upperSh >= body*1.8 && upperSh >= range*0.28;
+  const longLower = lowerSh >= body*1.8 && lowerSh >= range*0.28;
+  const isHighVol    = c.volume > avgVol * 1.8;
+  const isVeryHighVol= c.volume > avgVol * 2.5;
+
+  // Prior trend: last 5 candles
+  const tw        = data.slice(Math.max(0,idx-5), idx);
+  const priorUp   = tw.length>1 && tw[tw.length-1].close > tw[0].close*1.005;
+  const priorDown = tw.length>1 && tw[tw.length-1].close < tw[0].close*0.995;
+
+  const hasGapUp   = p1 && c.open > p1.close*1.003;
+  const hasGapDown = p1 && c.open < p1.close*0.997;
+
+  let pattern=null, signal='neutral', control='contested', who='mixed', msg='';
+
+  // ── 3-candle patterns ────────────────────────────────────
+  if (p1 && p2) {
+    const p2b  = Math.abs(p2.close-p2.open);
+    const p2g  = p2.close>=p2.open;
+    const p2lg = p2b >= avgBody*1.3;
+    const p1b  = Math.abs(p1.close-p1.open);
+    const p1sm = p1b <= avgBody*0.6;
+    // Evening Star
+    if (p2g && p2lg && p1sm && !isGreen && isLong && c.close < p2.open + p2b*0.6) {
+      pattern='Evening Star'; signal='bearish'; control='sellers'; who='institutional';
+      msg='3-candle top reversal — bulls exhausted, bears took decisive control.';
+    }
+    // Morning Star
+    if (!p2g && p2lg && p1sm && isGreen && isLong && c.close > p2.close + p2b*0.45 && !pattern) {
+      pattern='Morning Star'; signal='bullish'; control='buyers'; who='institutional';
+      msg='3-candle bottom reversal — bears exhausted, bulls took decisive control.';
+    }
+  }
+
+  // ── 2-candle patterns ────────────────────────────────────
+  if (!pattern && p1) {
+    const p1b  = Math.abs(p1.close-p1.open);
+    const p1g  = p1.close>=p1.open;
+    const p1lg = p1b >= avgBody*1.3;
+    const p1bt = Math.max(p1.open,p1.close);
+    const p1bb = Math.min(p1.open,p1.close);
+    // Bullish Engulfing
+    if (!p1g && p1lg && isGreen && isLong && c.open<=p1.close && c.close>=p1.open) {
+      pattern='Bullish Engulfing'; signal='bullish'; control='buyers'; who='institutional';
+      msg='Bulls completely overwhelmed bears — abrupt reversal of sentiment. Strong buy signal.';
+    }
+    // Bearish Engulfing
+    else if (p1g && p1lg && !isGreen && isLong && c.open>=p1.close && c.close<=p1.open) {
+      pattern='Bearish Engulfing'; signal='bearish'; control='sellers'; who='institutional';
+      msg='Bears completely overwhelmed bulls — abrupt reversal of sentiment. Strong sell signal.';
+    }
+    // Bearish Harami
+    else if (p1g && p1lg && body<p1b*0.5 && bodyTop<=p1bt && bodyBot>=p1bb) {
+      pattern=isDoji?'Bearish Harami Cross':'Bearish Harami'; signal='bearish'; control='contested';
+      msg='Bulls losing conviction — small body inside prior candle. Momentum is shifting.';
+    }
+    // Bullish Harami
+    else if (!p1g && p1lg && body<p1b*0.5 && bodyTop<=p1bt && bodyBot>=p1bb) {
+      pattern=isDoji?'Bullish Harami Cross':'Bullish Harami'; signal='bullish'; control='contested';
+      msg='Bears losing momentum — indecision inside prior candle suggests possible reversal.';
+    }
+    // Dark Cloud Cover
+    else if (p1g && p1lg && !isGreen && isLong && c.open>p1.close && c.close<(p1bb+p1b*0.5)) {
+      pattern='Dark Cloud Cover'; signal='bearish'; control='sellers';
+      who=isHighVol?'institutional':'retail';
+      msg='Gapped up then bears drove deep into the prior bullish candle — bearish reversal warning.';
+    }
+    // Piercing Pattern
+    else if (!p1g && p1lg && isGreen && isLong && c.open<p1.close && c.close>(p1bt-p1b*0.5)) {
+      pattern='Piercing Pattern'; signal='bullish'; control='buyers';
+      msg='Bulls gapped down then drove back well into the prior bearish candle — bullish reversal.';
+    }
+    // Bearish Star
+    else if (p1g && p1lg && isShort && hasGapUp) {
+      pattern='Bearish Star'; signal='bearish'; control='contested';
+      msg='Gap up then indecision — advance losing momentum. Warning sign.';
+    }
+    // Bullish Star
+    else if (!p1g && p1lg && isShort && hasGapDown) {
+      pattern='Bullish Star'; signal='bullish'; control='contested';
+      msg='Gap down then indecision — selling pressure stalling. Potential reversal.';
+    }
+  }
+
+  // ── 1-candle patterns ────────────────────────────────────
+  if (!pattern) {
+    if (isDoji) {
+      const longU = upperSh > avgBody*0.7;
+      const longL = lowerSh > avgBody*0.7;
+      if (longU && longL) {
+        pattern='Long-Legged Doji'; signal='neutral'; control='contested';
+        msg='Bulls & bears battled violently — neither won. Market has lost its sense of direction.';
+      } else if (longU && lowerSh < range*0.1) {
+        pattern='Gravestone Doji'; signal=priorUp?'bearish':'neutral'; control='sellers';
+        msg=priorUp?'Bears drove price all the way back to the low — powerful bearish warning at a top.':'Bears fully controlled the close despite the intraday rally.';
+      } else if (longL && upperSh < range*0.1) {
+        pattern='Dragonfly Doji'; signal=priorDown?'bullish':'neutral'; control='buyers';
+        msg=priorDown?'Bulls stepped in and erased all losses — potential reversal signal.':'Strong buyer defense — long shadow shows bears were firmly rejected.';
+      } else if (priorUp) {
+        pattern='Northern Doji'; signal='bearish'; control='contested';
+        msg='Indecision at the top — bulls losing conviction after the advance.';
+      } else if (priorDown) {
+        pattern='Southern Doji'; signal='bullish'; control='contested';
+        msg='Indecision at the bottom — bears losing grip. Watch for bullish follow-through.';
+      } else {
+        pattern='Doji'; signal='neutral'; control='contested';
+        msg='Complete equilibrium — bulls and bears in a standoff.';
+      }
+    } else if (isSpin) {
+      pattern='Spinning Top'; signal='neutral'; control='contested';
+      msg=priorUp?'Upside momentum fading — dominant side unclear. Caution near top.':'Selling pressure easing — neither side leading. Possible stabilization.';
+    } else if (longLower && !longUpper && isShort) {
+      // Umbrella line
+      if (priorDown) {
+        pattern='Hammer'; signal='bullish'; control='buyers'; who='institutional';
+        msg='Sharp sell-off rejected intraday — buyers (smart money) stepped in firmly. Bullish reversal potential.';
+      } else {
+        pattern='Hanging Man'; signal='bearish'; control='sellers';
+        msg='Sharp intraday sell-off during uptrend — sellers tested the bulls. Wait for lower close confirmation.';
+      }
+    } else if (longUpper && !longLower && isShort) {
+      // Inverted umbrella
+      if (priorUp) {
+        pattern='Shooting Star'; signal='bearish'; control='sellers'; who='retail';
+        msg='Rally failed intraday — retail crowd chased the high, institutions sold into them. Bearish reversal.';
+      } else {
+        pattern='Inverted Hammer'; signal='bullish'; control='contested';
+        msg='Bulls tested higher ground intraday. Bears are nervous — needs bullish confirmation next session.';
+      }
+    } else if (isLong) {
+      if (isGreen) {
+        pattern='Strong Bullish Candle'; signal='bullish'; control='buyers';
+        who=isVeryHighVol&&!hasGapUp?'institutional':hasGapUp?'retail':'mixed';
+        msg=priorDown?'Bulls arrived in force — potential trend reversal or new uptrend starting.':'Bulls fully in control. '+(isHighVol?'High volume confirms institutional conviction.':'Steady buying pressure.');
+      } else {
+        pattern='Strong Bearish Candle'; signal='bearish'; control='sellers';
+        who=isVeryHighVol&&!hasGapDown?'institutional':hasGapDown?'retail':'mixed';
+        msg=priorUp?'Bears took over decisively — potential trend reversal.':'Bears fully dominant. '+(isHighVol?'High volume — capitulation selling may be nearing exhaustion.':'Sustained selling pressure.');
+      }
+    } else {
+      pattern=isGreen?'Bullish Candle':'Bearish Candle';
+      signal=isGreen?'bullish':'bearish';
+      control=isGreen?'buyers':'sellers';
+      who='mixed';
+      msg=isGreen?'Buyers in control this session.':'Sellers in control this session.';
+    }
+  }
+
+  return { pattern, signal, control, who, msg, isHighVol };
+}
+
+function updateCandleIntel(idx) {
+  const panel = document.getElementById('mob-candle-intel');
+  if (!panel) return;
+  if (idx===null || !mobPriceData) { panel.style.display='none'; return; }
+  const intel = analyzeCandleIntel(mobPriceData, idx);
+  if (!intel) { panel.style.display='none'; return; }
+
+  const sigArrow = intel.signal==='bullish'?'↑':intel.signal==='bearish'?'↓':'↔';
+  const sigCls   = intel.signal==='bullish'?'ci-signal-bull':intel.signal==='bearish'?'ci-signal-bear':'ci-signal-neutral';
+  const sigLabel = intel.signal==='bullish'?'BULLISH':intel.signal==='bearish'?'BEARISH':'NEUTRAL';
+  const ctrlIcon = intel.control==='buyers'?'🟢':intel.control==='sellers'?'🔴':'⚪';
+  const ctrlLbl  = intel.control==='buyers'?'Buyers in control':intel.control==='sellers'?'Sellers in control':'Contested';
+  const whoIcon  = intel.who==='institutional'?'🏦':intel.who==='retail'?'👥':'〰️';
+  const whoLbl   = intel.who==='institutional'?'Smart Money':intel.who==='retail'?'Retail Crowd':'Mixed Activity';
+  const volBadge = intel.isHighVol?'<span class="ci-chip" style="background:rgba(88,166,255,.1);color:#58a6ff;border-color:rgba(88,166,255,.3)">⚡ High Vol</span>':'';
+  const d = mobPriceData[idx];
+  panel.innerHTML = `
+    <div class="ci-row" style="justify-content:space-between;margin-bottom:4px">
+      <span class="ci-pattern">🕯️ ${intel.pattern}</span>
+      <span class="${sigCls}">${sigArrow} ${sigLabel}</span>
+    </div>
+    <div class="ci-row">
+      <span class="ci-chip ${intel.control}">${ctrlIcon} ${ctrlLbl}</span>
+      <span class="ci-chip ${intel.who}">${whoIcon} ${whoLbl}</span>
+      ${volBadge}
+    </div>
+    <div class="ci-msg">${intel.msg}</div>`;
+  panel.style.display='block';
+}
+
 function renderMobCanvas() {
   const canvas = document.getElementById("mob-canvas");
   if (!canvas) return;
@@ -1853,7 +2074,8 @@ function renderMobCanvas() {
     ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 1; ctx.setLineDash([4,4]);
     ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
     ctx.setLineDash([]);
-    const TW = 148, TH = 76;
+    const intel = analyzeCandleIntel(data, mobTouchIdx);
+    const TW = 160, TH = 92;
     let tx = x + 10; if (tx + TW > W - PAD_R) tx = x - TW - 10;
     const ty = PAD_T + 4;
     ctx.fillStyle = "rgba(15,23,42,0.95)"; ctx.strokeStyle = "rgba(88,166,255,0.4)"; ctx.lineWidth = 1;
@@ -1866,6 +2088,14 @@ function renderMobCanvas() {
     const chg = ((d.close-d.open)/d.open*100).toFixed(2);
     ctx.fillStyle = d.close>=d.open ? "#3fb950" : "#f85149";
     ctx.fillText(`${d.close>=d.open?"+":""}${chg}%  Vol:${(d.volume/1e6).toFixed(1)}M`, tx+8, ty+62);
+    if (intel) {
+      const sigColor = intel.signal==='bullish'?'#3fb950':intel.signal==='bearish'?'#f85149':'#8b949e';
+      ctx.fillStyle = sigColor; ctx.font = "bold 10px -apple-system,sans-serif";
+      ctx.fillText(intel.pattern, tx+8, ty+78);
+    }
+    updateCandleIntel(mobTouchIdx);
+  } else {
+    updateCandleIntel(null);
   }
 }
 
@@ -1896,7 +2126,7 @@ function _roundRect(ctx, x, y, w, h, r) {
     if (e.target.id === "mob-canvas") { mobTouchIdx = getIdx(e); renderMobCanvas(); }
   }, { passive: true });
   document.addEventListener("touchend", e => {
-    if (e.target.id === "mob-canvas") { setTimeout(() => { mobTouchIdx = null; renderMobCanvas(); }, 1800); }
+    if (e.target.id === "mob-canvas") { setTimeout(() => { mobTouchIdx = null; renderMobCanvas(); updateCandleIntel(null); }, 1800); }
   });
 })();
 
