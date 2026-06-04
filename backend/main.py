@@ -317,6 +317,16 @@ def get_price_data(ticker: str) -> dict:
             "volume": int(row["Volume"]),
         })
 
+    # Float shares and 3-month avg volume from stock.info (best-effort)
+    float_shares = None
+    avg_3m_volume = None
+    try:
+        info = stock.info
+        float_shares = info.get("floatShares")
+        avg_3m_volume = info.get("averageDailyVolume3Month") or info.get("averageVolume")
+    except Exception:
+        pass
+
     return {
         "ticker": ticker,
         "current_price": safe_round(cur["Close"]),
@@ -333,6 +343,8 @@ def get_price_data(ticker: str) -> dict:
         "today_volume": int(cur["Volume"]),
         "avg_20d_volume": int(avg_vol),
         "volume_ratio": f"{vol_ratio:.1f}x avg",
+        "float_shares": int(float_shares) if float_shares else None,
+        "avg_3m_volume": int(avg_3m_volume) if avg_3m_volume else None,
         "last_30_candles": candles,
     }
 

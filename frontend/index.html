@@ -1131,6 +1131,8 @@
       <div class="mob-stat"><div class="mob-stat-label">Volume</div><div class="mob-stat-value" id="mob-s-vol">—</div></div>
       <div class="mob-stat"><div class="mob-stat-label">vs MA200</div><div class="mob-stat-value" id="mob-s-ma200">—</div></div>
       <div class="mob-stat"><div class="mob-stat-label">vs MA50</div><div class="mob-stat-value" id="mob-s-ma50">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">Float</div><div class="mob-stat-value" id="mob-s-float">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">Avg Vol (3M)</div><div class="mob-stat-value" id="mob-s-avgvol">—</div></div>
     </div>
   </div>
 
@@ -1849,9 +1851,12 @@ async function fetchMobPrice(ticker) {
   try {
     const res = await fetch(`${API_BASE}/price/${ticker}`);
     const data = await res.json();
+    currentPriceMeta = data;
     mobPriceData = data.last_30_candles;
     updateMobStats(data);
     renderMobCanvas();
+    // Auto-show intel for the most recent candle without requiring a touch
+    if (mobPriceData && mobPriceData.length) updateCandleIntel(mobPriceData.length - 1);
   } catch (e) { console.warn("price fetch", e); }
 }
 
@@ -2271,6 +2276,14 @@ function _roundRect(ctx, x, y, w, h, r) {
 
 window.addEventListener("resize", () => { if (window.innerWidth <= 768) renderMobCanvas(); });
 
+function formatBig(n) {
+  if (!n) return '—';
+  if (n >= 1e9) return (n/1e9).toFixed(2)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0)+'K';
+  return n.toString();
+}
+
 function updateMobStats(data) {
   document.getElementById("mob-price-row").style.display = "flex";
   document.getElementById("mob-price").textContent = `$${data.current_price}`;
@@ -2289,6 +2302,8 @@ function updateMobStats(data) {
   const ma50 = document.getElementById("mob-s-ma50");
   ma50.textContent   = data.price_vs_ma50 === "above" ? "▲ Above" : "▼ Below";
   ma50.className     = "mob-stat-value " + (data.price_vs_ma50 === "above" ? "bullish" : "bearish");
+  document.getElementById("mob-s-float").textContent  = formatBig(data.float_shares);
+  document.getElementById("mob-s-avgvol").textContent = formatBig(data.avg_3m_volume);
 }
 
 const MOB_SECTIONS = [
