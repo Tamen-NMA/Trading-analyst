@@ -93,41 +93,48 @@ def get_client_ip(request: Request) -> str:
 
 def count_today_analyses(ip: str) -> int:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    if DATABASE_URL:
-        with _pg() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT COUNT(*) FROM analyses WHERE user_ip = %s AND searched_at LIKE %s",
+    try:
+        if DATABASE_URL:
+            with _pg() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "SELECT COUNT(*) FROM analyses WHERE user_ip = %s AND searched_at LIKE %s",
+                        (ip, f"{today}%"),
+                    )
+                    return cur.fetchone()[0]
+        else:
+            with _sqlite() as conn:
+                row = conn.execute(
+                    "SELECT COUNT(*) FROM analyses WHERE user_ip = ? AND searched_at LIKE ?",
                     (ip, f"{today}%"),
-                )
-                return cur.fetchone()[0]
-    else:
-        with _sqlite() as conn:
-            row = conn.execute(
-                "SELECT COUNT(*) FROM analyses WHERE user_ip = ? AND searched_at LIKE ?",
-                (ip, f"{today}%"),
-            ).fetchone()
-            return row[0] if row else 0
+                ).fetchone()
+                return row[0] if row else 0
+    except Exception as e:
+        print(f"[rate-limit] DB error, allowing request: {e}")
+        return 0  # fail open — don't block users due to DB issues
 
 def save_analysis(ticker: str, text: str, price_data: dict, user_ip: str = ""):
-    verdict_match = re.search(r"\*\*VERDICT:\*\*\s*(BULLISH|BEARISH|NEUTRAL)", text, re.I)
-    verdict = verdict_match.group(1).upper() if verdict_match else None
-    searched_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
-    vals = (ticker, searched_at, text, price_data.get("current_price"), price_data.get("daily_change_pct"), verdict, user_ip)
-    if DATABASE_URL:
-        with _pg() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "INSERT INTO analyses (ticker, searched_at, analysis_text, price, daily_change, verdict, user_ip) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+    try:
+        verdict_match = re.search(r"\*\*VERDICT:\*\*\s*(BULLISH|BEARISH|NEUTRAL)", text, re.I)
+        verdict = verdict_match.group(1).upper() if verdict_match else None
+        searched_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+        vals = (ticker, searched_at, text, price_data.get("current_price"), price_data.get("daily_change_pct"), verdict, user_ip)
+        if DATABASE_URL:
+            with _pg() as conn:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "INSERT INTO analyses (ticker, searched_at, analysis_text, price, daily_change, verdict, user_ip) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+                        vals,
+                    )
+                conn.commit()
+        else:
+            with _sqlite() as conn:
+                conn.execute(
+                    "INSERT INTO analyses (ticker, searched_at, analysis_text, price, daily_change, verdict, user_ip) VALUES (?,?,?,?,?,?,?)",
                     vals,
                 )
-            conn.commit()
-    else:
-        with _sqlite() as conn:
-            conn.execute(
-                "INSERT INTO analyses (ticker, searched_at, analysis_text, price, daily_change, verdict, user_ip) VALUES (?,?,?,?,?,?,?)",
-                vals,
-            )
+    except Exception as e:
+        print(f"[save-analysis] DB error (analysis still delivered): {e}")
 
 def _history_rows(rows_raw, pg: bool) -> list:
     if pg:
@@ -384,7 +391,7 @@ async def analyze(ticker: str, request: Request):
         while True:
             try:
                 async with async_client.messages.stream(
-                    model="claude-opus-4-7",
+                    model="claude-opus-4-8",
                     max_tokens=8192,
                     system=cached_system,
                     tools=[{"type": "web_search_20260209", "name": "web_search"}],
@@ -443,7 +450,7 @@ async def price(ticker: str):
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "model": "claude-opus-4-7"}
+    return {"status": "ok", "model": "claude-opus-4-8"}
 
 
 class ExplainRequest(BaseModel):
@@ -458,7 +465,7 @@ async def explain(body: ExplainRequest):
         raise HTTPException(status_code=400, detail="Selection too long")
 
     msg = await async_client.messages.create(
-        model="claude-opus-4-7",
+        model="claude-opus-4-8",
         max_tokens=200,
         system=(
             "You are a friendly trading teacher explaining concepts to a complete beginner. "

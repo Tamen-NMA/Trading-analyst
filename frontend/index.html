@@ -1345,7 +1345,7 @@ async function runAnalysis() {
   currentES.onerror = () => {
     currentES.close();
     currentES = null;
-    showAnalysisError("Connection error — please try again.");
+    showAnalysisError("Could not reach the server — please wait a moment and try again.");
   };
 }
 
