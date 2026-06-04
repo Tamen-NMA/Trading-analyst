@@ -297,6 +297,35 @@
   .stat-value.bullish { color: #3fb950; }
   .stat-value.bearish { color: #f85149; }
 
+  /* ── Desktop Candle Intel strip ── */
+  #desktop-candle-intel {
+    background: #161b22;
+    border-top: 1px solid #30363d;
+    padding: 7px 16px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    font-size: 11.5px;
+  }
+  #desktop-candle-intel.visible { display: flex; }
+  .dci-pattern { font-weight: 700; color: #e6edf3; }
+  .dci-badge {
+    border-radius: 5px; padding: 2px 8px;
+    font-size: 11px; font-weight: 700; border: 1px solid;
+  }
+  .dci-badge.bull  { background:rgba(63,185,80,.12);  color:#3fb950; border-color:rgba(63,185,80,.3); }
+  .dci-badge.bear  { background:rgba(248,81,73,.12);  color:#f85149; border-color:rgba(248,81,73,.3); }
+  .dci-badge.neu   { background:rgba(139,148,158,.12);color:#8b949e; border-color:rgba(139,148,158,.3); }
+  .dci-badge.inst  { background:rgba(88,166,255,.12); color:#58a6ff; border-color:rgba(88,166,255,.3); }
+  .dci-badge.ret   { background:rgba(210,153,34,.12); color:#d29922; border-color:rgba(210,153,34,.3); }
+  .dci-badge.mix   { background:rgba(139,148,158,.08);color:#8b949e; border-color:rgba(139,148,158,.2); }
+  .dci-badge.sup   { background:rgba(63,185,80,.1);   color:#3fb950; border-color:rgba(63,185,80,.25); }
+  .dci-badge.res   { background:rgba(248,81,73,.1);   color:#f85149; border-color:rgba(248,81,73,.25); }
+  .dci-sep { width:1px; height:14px; background:#30363d; flex-shrink:0; }
+  .dci-msg { color:#8b949e; font-size:11px; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
   /* ── Tooltip ── */
   [data-tip] { position: relative; }
   [data-tip]::after {
@@ -954,6 +983,7 @@
       <span id="chart-ticker" style="color:#58a6ff"></span>
     </div>
     <div id="tv-chart-container"></div>
+    <div id="desktop-candle-intel"></div>
   </div>
 
   <!-- Analysis -->
@@ -1168,6 +1198,7 @@ const API_BASE = "";
 let tvWidget = null;
 let currentES = null;
 let rawText = "";
+let currentPriceMeta = null;
 
 // ── TradingView chart ──
 function loadChart(ticker) {
@@ -1205,8 +1236,85 @@ function loadChart(ticker) {
   });
 }
 
+// ── Support / Resistance detection ───────────────────────
+function detectSR(candles, meta) {
+  if (!candles || !candles.length) return { support: [], resistance: [] };
+  const cur = candles[candles.length-1].close;
+  const band = cur * 0.022; // 2.2% proximity band
+
+  // Swing highs & lows: local extreme vs 2 bars each side
+  const highs = [], lows = [];
+  for (let i = 2; i < candles.length-2; i++) {
+    const h = candles[i].high, l = candles[i].low;
+    if (h > candles[i-1].high && h > candles[i-2].high &&
+        h > candles[i+1].high && h > candles[i+2].high) highs.push(h);
+    if (l < candles[i-1].low  && l < candles[i-2].low  &&
+        l < candles[i+1].low  && l < candles[i+2].low)  lows.push(l);
+  }
+
+  const support = [], resistance = [];
+
+  // Swing levels near current price
+  lows.forEach(l  => { if (cur - l  >= -band/2 && cur - l  < band*1.5) support.push(`Swing Low $${l.toFixed(2)}`); });
+  highs.forEach(h => { if (h  - cur >= -band/2 && h  - cur < band*1.5) resistance.push(`Swing High $${h.toFixed(2)}`); });
+
+  // MA levels
+  if (meta) {
+    const adds = [
+      { val: meta.ma200, lbl: 'MA200' },
+      { val: meta.ma50,  lbl: 'MA50'  },
+      { val: meta.ma20,  lbl: 'MA20'  },
+    ];
+    adds.forEach(({ val, lbl }) => {
+      if (!val) return;
+      if (Math.abs(cur - val) < band) {
+        (cur >= val ? support : resistance).push(`${lbl} $${val}`);
+      }
+    });
+    // 52-week extremes
+    if (meta['52w_high'] && Math.abs(cur - meta['52w_high'])/cur < 0.025) resistance.push(`52W High $${meta['52w_high']}`);
+    if (meta['52w_low']  && Math.abs(cur - meta['52w_low']) /cur < 0.025) support.push(`52W Low $${meta['52w_low']}`);
+  }
+
+  return { support: [...new Set(support)], resistance: [...new Set(resistance)] };
+}
+
+function renderDesktopIntel(data) {
+  const el = document.getElementById('desktop-candle-intel');
+  if (!el || !data || !data.last_30_candles) return;
+  const candles = data.last_30_candles;
+  const intel   = analyzeCandleIntel(candles, candles.length-1);
+  const sr      = detectSR(candles, data);
+  if (!intel) return;
+
+  const sigCls  = intel.signal==='bullish'?'bull':intel.signal==='bearish'?'bear':'neu';
+  const sigLbl  = intel.signal==='bullish'?'↑ BULLISH':intel.signal==='bearish'?'↓ BEARISH':'↔ NEUTRAL';
+  const ctrlCls = intel.control==='buyers'?'bull':intel.control==='sellers'?'bear':'neu';
+  const ctrlLbl = intel.control==='buyers'?'🟢 Buyers':intel.control==='sellers'?'🔴 Sellers':'⚪ Contested';
+  const whoCls  = intel.who==='institutional'?'inst':intel.who==='retail'?'ret':'mix';
+  const whoLbl  = intel.who==='institutional'?'🏦 Smart Money':intel.who==='retail'?'👥 Retail':'〰️ Mixed';
+
+  const srBadges = [
+    ...sr.resistance.map(r=>`<span class="dci-badge res">⚡ Resistance: ${r}</span>`),
+    ...sr.support.map(s=>`<span class="dci-badge sup">🛡️ Support: ${s}</span>`),
+  ].join('');
+
+  el.innerHTML = `
+    <span class="dci-pattern">🕯️ ${intel.pattern}</span>
+    <span class="dci-badge ${sigCls}">${sigLbl}</span>
+    <div class="dci-sep"></div>
+    <span class="dci-badge ${ctrlCls}">${ctrlLbl} in control</span>
+    <span class="dci-badge ${whoCls}">${whoLbl}</span>
+    <div class="dci-sep"></div>
+    ${srBadges || '<span style="color:#6e7681;font-size:11px">No S/R nearby</span>'}
+    <div class="dci-sep"></div>
+    <span class="dci-msg">${intel.msg}</span>`;
+  el.classList.add('visible');
+}
+
 // ── Stats bar ──
 function updateStats(data) {
+  currentPriceMeta = data;
   document.getElementById("stats-bar").classList.add("visible");
   document.getElementById("s-price").textContent = `$${data.current_price}`;
 
@@ -1232,6 +1340,7 @@ function updateStats(data) {
   document.getElementById("s-vol").textContent = data.volume_ratio;
   document.getElementById("ma-tag").textContent = `MA200: $${data.ma200} | MA50: $${data.ma50}`;
   document.getElementById("vol-tag").textContent = `Vol: ${data.volume_ratio}`;
+  renderDesktopIntel(data);
 }
 
 // ── Verdict parsing ──
@@ -1943,7 +2052,14 @@ function updateCandleIntel(idx) {
   const whoIcon  = intel.who==='institutional'?'🏦':intel.who==='retail'?'👥':'〰️';
   const whoLbl   = intel.who==='institutional'?'Smart Money':intel.who==='retail'?'Retail Crowd':'Mixed Activity';
   const volBadge = intel.isHighVol?'<span class="ci-chip" style="background:rgba(88,166,255,.1);color:#58a6ff;border-color:rgba(88,166,255,.3)">⚡ High Vol</span>':'';
-  const d = mobPriceData[idx];
+
+  // Support / Resistance
+  const sr = detectSR(mobPriceData, currentPriceMeta);
+  const srHtml = [
+    ...sr.resistance.map(r=>`<span class="ci-chip sellers">⚡ Resistance: ${r}</span>`),
+    ...sr.support.map(s=>`<span class="ci-chip buyers">🛡️ Support: ${s}</span>`),
+  ].join('');
+
   panel.innerHTML = `
     <div class="ci-row" style="justify-content:space-between;margin-bottom:4px">
       <span class="ci-pattern">🕯️ ${intel.pattern}</span>
@@ -1954,6 +2070,7 @@ function updateCandleIntel(idx) {
       <span class="ci-chip ${intel.who}">${whoIcon} ${whoLbl}</span>
       ${volBadge}
     </div>
+    ${srHtml ? `<div class="ci-row" style="margin-top:2px">${srHtml}</div>` : ''}
     <div class="ci-msg">${intel.msg}</div>`;
   panel.style.display='block';
 }
@@ -2066,6 +2183,28 @@ function renderMobCanvas() {
   const step = Math.ceil(n / 6);
   for (let i = 0; i < n; i += step) {
     ctx.fillText(data[i].date.slice(5).replace("-","/"), xOf(i), H - PAD_B + 8 + VOL_H + 10);
+  }
+
+  // S/R lines on canvas
+  if (data.length) {
+    const sr = detectSR(data, currentPriceMeta);
+    ctx.font = "9px -apple-system,sans-serif"; ctx.textAlign = "left";
+    ctx.setLineDash([3,4]); ctx.lineWidth = 0.8;
+    sr.support.forEach(lbl => {
+      const price = parseFloat(lbl.match(/\$([\d.]+)/)?.[1]);
+      if (!price || price < pMin || price > pMax) return;
+      const y = pY(price);
+      ctx.strokeStyle = "rgba(63,185,80,0.55)"; ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W-PAD_R-2, y); ctx.stroke();
+      ctx.fillStyle = "rgba(63,185,80,0.9)"; ctx.fillText("S", W-PAD_R+2, y+3);
+    });
+    sr.resistance.forEach(lbl => {
+      const price = parseFloat(lbl.match(/\$([\d.]+)/)?.[1]);
+      if (!price || price < pMin || price > pMax) return;
+      const y = pY(price);
+      ctx.strokeStyle = "rgba(248,81,73,0.55)"; ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W-PAD_R-2, y); ctx.stroke();
+      ctx.fillStyle = "rgba(248,81,73,0.9)"; ctx.fillText("R", W-PAD_R+2, y+3);
+    });
+    ctx.setLineDash([]);
   }
 
   // Crosshair tooltip on touch
