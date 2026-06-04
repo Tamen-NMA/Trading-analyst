@@ -83,7 +83,7 @@ def init_db():
 async def startup():
     init_db()
 
-DAILY_LIMIT = 2
+DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT", "2"))
 
 def get_client_ip(request: Request) -> str:
     forwarded = request.headers.get("X-Forwarded-For")
