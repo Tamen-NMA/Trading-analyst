@@ -264,6 +264,8 @@ def speak(text: str):
             r.raise_for_status()
             audio_bytes = b"".join(r.iter_bytes())
 
+        # Trim to int16 alignment (2 bytes per sample)
+        audio_bytes = audio_bytes[: len(audio_bytes) - (len(audio_bytes) % 2)]
         audio_np = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0
         sd.play(audio_np, samplerate=16000)
         sd.wait()
