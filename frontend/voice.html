@@ -7,6 +7,8 @@
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body { width: 100%; height: 100%; overflow-x: hidden; }
+
 body {
   background: #04030a;
   color: #e2e8f0;
@@ -15,26 +17,74 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow-x: hidden;
+  cursor: none;
 }
 
-/* subtle grid */
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background-image:
-    linear-gradient(rgba(130,60,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(130,60,255,0.03) 1px, transparent 1px);
-  background-size: 52px 52px;
-  pointer-events: none; z-index: 0;
+/* Full-screen WebGL canvas behind everything */
+#c {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 1;
+  pointer-events: none;
 }
+
+/* Floating financial data stream */
+#data-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+.df {
+  position: absolute;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-family: 'Courier New', monospace;
+  opacity: 0;
+  user-select: none;
+}
+
+/* Custom cursor */
+#cursor {
+  position: fixed;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: rgba(155,94,255,0.9);
+  box-shadow: 0 0 16px rgba(155,94,255,0.8), 0 0 40px rgba(155,94,255,0.3);
+  pointer-events: none;
+  z-index: 999;
+  transform: translate(-50%,-50%);
+  transition: width .15s, height .15s, background .3s;
+}
+#cursor.big {
+  width: 28px; height: 28px;
+  background: rgba(94,171,255,0.7);
+  box-shadow: 0 0 24px rgba(94,171,255,0.8), 0 0 60px rgba(94,171,255,0.3);
+}
+#cursor-trail {
+  position: fixed;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(155,94,255,0.3);
+  pointer-events: none;
+  z-index: 998;
+  transform: translate(-50%,-50%);
+  transition: left .12s ease, top .12s ease;
+}
+
+/* All UI above WebGL */
+header, .stage, .transcript-wrap { position: relative; z-index: 10; }
 
 header {
-  position: relative; z-index: 10;
   width: 100%; padding: 18px 32px;
   display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid rgba(130,60,255,0.1);
-  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(130,60,255,0.12);
+  background: rgba(4,3,10,0.6);
+  backdrop-filter: blur(16px);
 }
 .brand     { letter-spacing: 10px; font-size: 14px; font-weight: 700; color: #9b5eff; text-transform: uppercase; }
 .brand-sub { font-size: 9px; letter-spacing: 4px; color: #374151; text-transform: uppercase; margin-top: 3px; }
@@ -44,35 +94,23 @@ header {
 .back-link { font-size:10px; letter-spacing:3px; color:#374151; text-decoration:none; text-transform:uppercase; transition:color .2s; }
 .back-link:hover { color:#9b5eff; }
 
-/* ── Stage ── */
+/* Stage — just the status text, entity is in the WebGL canvas */
 .stage {
-  position: relative; z-index: 5;
   flex: 0 0 auto;
   display: flex; flex-direction: column; align-items: center;
-  padding: 40px 0 28px;
+  /* Push status text below roughly where the entity sits */
+  margin-top: 320px;
+  padding-bottom: 20px;
 }
 
-/* ambient glow behind canvas changes with state */
-.stage::before {
-  content: '';
-  position: absolute;
-  width: 500px; height: 500px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(100,30,220,.07) 0%, transparent 68%);
-  pointer-events: none;
-  transition: background 1.2s ease;
-}
-.stage[data-state="listening"]::before { background: radial-gradient(circle, rgba(80,20,200,.14) 0%, transparent 68%); }
-.stage[data-state="thinking"]::before  { background: radial-gradient(circle, rgba(40,120,255,.12) 0%, transparent 68%); }
-.stage[data-state="speaking"]::before  { background: radial-gradient(circle, rgba(180,40,220,.12) 0%, transparent 68%); }
-
-#c { display:block; }
-
-/* ── Status ── */
 .status-area {
-  margin-top: 28px;
   display: flex; flex-direction: column; align-items: center; gap: 7px;
   min-height: 44px;
+  background: rgba(4,3,10,0.45);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(130,60,255,0.1);
+  border-radius: 20px;
+  padding: 10px 24px;
 }
 .status-line { display:flex; align-items:center; gap:8px; }
 .pulse-dot   { width:5px; height:5px; border-radius:50%; background:#9b5eff; animation:dot-blink 2.5s ease-in-out infinite; }
@@ -94,16 +132,15 @@ header {
 #analyzing-text.visible { opacity: 1; }
 @keyframes flicker { 0%,88%,100%{opacity:1;} 92%{opacity:.15;} 96%{opacity:1;} 98%{opacity:.35;} }
 
-/* ── Transcript ── */
+/* Transcript */
 .transcript-wrap {
-  position: relative; z-index: 5;
   width: 100%; max-width: 680px;
   padding: 0 28px 100px;
   flex: 1;
 }
 .transcript-header {
   font-size: 8px; letter-spacing: 5px; text-transform: uppercase;
-  color: #1f2937; border-top: 1px solid #0f172a;
+  color: #1f2937; border-top: 1px solid rgba(130,60,255,0.08);
   padding-top: 18px; margin-bottom: 20px;
 }
 .msg { display:flex; gap:14px; margin-bottom:20px; animation:msg-in .35s ease; }
@@ -115,10 +152,10 @@ header {
 }
 .msg.you   .msg-av { background:rgba(155,94,255,.1); color:#9b5eff; border:1px solid rgba(155,94,255,.25); }
 .msg.allen .msg-av { background:rgba(94,171,255,.1); color:#5eabff; border:1px solid rgba(94,171,255,.25); }
-.msg-who   { font-size:9px; letter-spacing:3px; text-transform:uppercase; margin-bottom:5px; }
+.msg-who { font-size:9px; letter-spacing:3px; text-transform:uppercase; margin-bottom:5px; }
 .msg.you   .msg-who { color:#9b5eff; }
 .msg.allen .msg-who { color:#5eabff; }
-.msg-text  { font-size:14px; line-height:1.65; color:#9ca3af; }
+.msg-text { font-size:14px; line-height:1.65; color:#9ca3af; }
 .msg.allen .msg-text { color:#d1d5db; }
 .hint {
   font-size:10px; letter-spacing:3px; text-transform:uppercase;
@@ -126,9 +163,33 @@ header {
   animation:hint-fade 4s ease-in-out infinite;
 }
 @keyframes hint-fade { 0%,40%,100%{opacity:.5;} 20%{opacity:1;} }
+
+/* Click ripple */
+.ripple {
+  position: fixed;
+  border-radius: 50%;
+  border: 1px solid rgba(155,94,255,0.6);
+  pointer-events: none;
+  z-index: 8;
+  transform: translate(-50%,-50%) scale(0);
+  animation: ripple-out .8s ease-out forwards;
+}
+@keyframes ripple-out {
+  to { transform: translate(-50%,-50%) scale(1); opacity: 0; width: 200px; height: 200px; }
+}
 </style>
 </head>
 <body>
+
+<!-- WebGL full-screen -->
+<canvas id="c"></canvas>
+
+<!-- Floating data -->
+<div id="data-layer"></div>
+
+<!-- Custom cursor -->
+<div id="cursor"></div>
+<div id="cursor-trail"></div>
 
 <header>
   <div>
@@ -143,8 +204,6 @@ header {
 </header>
 
 <div class="stage" id="stage" data-state="standby">
-  <canvas id="c"></canvas>
-
   <div class="status-area">
     <div class="status-line">
       <div class="pulse-dot"></div>
@@ -161,7 +220,6 @@ header {
   </div>
 </div>
 
-<!-- Three.js via importmap -->
 <script type="importmap">
 { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js" } }
 </script>
@@ -169,245 +227,396 @@ header {
 <script type="module">
 import * as THREE from 'three';
 
-// ── Renderer setup ────────────────────────────────────────
+// ── Renderer: full viewport ───────────────────────────────
 const canvas   = document.getElementById('c');
-const SIZE     = Math.min(window.innerWidth * 0.85, 420);
+const W = window.innerWidth, H = window.innerHeight;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setSize(SIZE, SIZE);
+renderer.setSize(W, H);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x000000, 0);
 
 const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 100);
-camera.position.set(0, 0, 3.2);
+const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 200);
+camera.position.set(0, 0, 4.5);
 
-// ── Simplex noise GLSL ────────────────────────────────────
+// Entity sits slightly above the viewport center
+const ENTITY_Y = 0.3;
+
+// ── Noise GLSL ────────────────────────────────────────────
 const NOISE = `
 vec3 mod289v3(vec3 x){return x-floor(x*(1./289.))*289.;}
 vec4 mod289v4(vec4 x){return x-floor(x*(1./289.))*289.;}
 vec4 permute(vec4 x){return mod289v4(((x*34.)+10.)*x);}
 vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-.85373472095314*r;}
-
 float snoise(vec3 v){
-  const vec2 C=vec2(1./6.,1./3.);
-  const vec4 D=vec4(0.,.5,1.,2.);
-  vec3 i=floor(v+dot(v,C.yyy));
-  vec3 x0=v-i+dot(i,C.xxx);
-  vec3 g=step(x0.yzx,x0.xyz);
-  vec3 l=1.-g;
-  vec3 i1=min(g.xyz,l.zxy);
-  vec3 i2=max(g.xyz,l.zxy);
-  vec3 x1=x0-i1+C.xxx;
-  vec3 x2=x0-i2+C.yyy;
-  vec3 x3=x0-D.yyy;
+  const vec2 C=vec2(1./6.,1./3.);const vec4 D=vec4(0.,.5,1.,2.);
+  vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);
+  vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.-g;
+  vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);
+  vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;
   i=mod289v3(i);
-  vec4 p=permute(permute(permute(
-    i.z+vec4(0.,i1.z,i2.z,1.))
-    +i.y+vec4(0.,i1.y,i2.y,1.))
-    +i.x+vec4(0.,i1.x,i2.x,1.));
-  float n_=.142857142857;
-  vec3 ns=n_*D.wyz-D.xzx;
+  vec4 p=permute(permute(permute(i.z+vec4(0.,i1.z,i2.z,1.))+i.y+vec4(0.,i1.y,i2.y,1.))+i.x+vec4(0.,i1.x,i2.x,1.));
+  float n_=.142857142857;vec3 ns=n_*D.wyz-D.xzx;
   vec4 j=p-49.*floor(p*ns.z*ns.z);
-  vec4 x_=floor(j*ns.z);
-  vec4 y_=floor(j-7.*x_);
-  vec4 x=x_*ns.x+ns.yyyy;
-  vec4 y=y_*ns.x+ns.yyyy;
-  vec4 h=1.-abs(x)-abs(y);
-  vec4 b0=vec4(x.xy,y.xy);
-  vec4 b1=vec4(x.zw,y.zw);
-  vec4 s0=floor(b0)*2.+1.;
-  vec4 s1=floor(b1)*2.+1.;
-  vec4 sh=-step(h,vec4(0.));
-  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;
-  vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
-  vec3 p0=vec3(a0.xy,h.x);
-  vec3 p1=vec3(a0.zw,h.y);
-  vec3 p2=vec3(a1.xy,h.z);
-  vec3 p3=vec3(a1.zw,h.w);
+  vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.*x_);
+  vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.-abs(x)-abs(y);
+  vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);
+  vec4 s0=floor(b0)*2.+1.;vec4 s1=floor(b1)*2.+1.;vec4 sh=-step(h,vec4(0.));
+  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+  vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);
   vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
-  p0*=norm.x; p1*=norm.y; p2*=norm.z; p3*=norm.w;
-  vec4 m=max(.5-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);
-  m=m*m;
+  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+  vec4 m=max(.5-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);m=m*m;
   return 105.*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
 }`;
 
-// ── Vertex shader ─────────────────────────────────────────
+// ── Entity shaders ────────────────────────────────────────
 const vertexShader = `
 ${NOISE}
-uniform float uTime;
-uniform float uMorph;   // 0=abstract  1=sphere  2=body
-varying vec3 vNormal;
-varying vec3 vViewPos;
-varying vec3 vWorldPos;
-
+uniform float uTime; uniform float uMorph;
+varying vec3 vNormal; varying vec3 vViewPos; varying vec3 vWorldPos;
 void main(){
-  float t = uTime;
-  vec3 pos = position;
-  vec3 n   = normal;
-
-  // ── ABSTRACT (standby): large multi-octave twisted form ──
-  float a1 = snoise(pos * 1.2 + vec3(t*.28, 0., 0.));
-  float a2 = snoise(pos * 2.3 - vec3(0., t*.21, t*.13));
-  float a3 = snoise(pos * 0.75 + vec3(t*.16, t*.19, 0.));
-  float a4 = snoise(pos * 3.1 + vec3(-t*.11, 0., t*.22));
-  vec3 abstractPos = pos + n*(a1*.52 + a2*.28 + a3*.30 + a4*.12);
-
-  // ── SPHERE (listening): just gentle breathing ripple ──
-  float sn = snoise(pos*5.5 + vec3(t*.7)) * .038;
-  vec3 spherePos = pos + n * sn;
-
-  // ── BODY (speaking): ghost / flowing humanoid silhouette ──
-  vec3 bPos = pos;
-  bPos.y   *= 1.55;
-  bPos.x   *= 0.88;
-  float waist  = -smoothstep(-.18,.0, pos.y)*smoothstep(.18,.0, pos.y)*.38;
-  float hips   =  smoothstep(-.55,-.22,pos.y)*smoothstep(.05,-.22,pos.y)*.20;
-  float chest  =  smoothstep(.08,.38, pos.y)*smoothstep(.60,.38, pos.y)*.16;
-  float shoulder=  smoothstep(.32,.50,pos.y)*smoothstep(.68,.50,pos.y)*.10;
-  float head   =  smoothstep(.52,.80, pos.y)*.25;
-  float bn     = snoise(bPos*1.9 + vec3(t*.38))*0.22
-               + snoise(bPos*3.5 - vec3(t*.22))*0.10;
-  vec3 bodyPos = bPos + n*(waist+hips+chest+shoulder+head+bn);
-
-  // ── smooth blend ──
-  float m01 = clamp(uMorph,     0.,1.);
-  float m12 = clamp(uMorph-1.,  0.,1.);
-  vec3 finalPos = mix(mix(abstractPos, spherePos, m01), bodyPos, m12);
-
-  vec4 mvPos = modelViewMatrix * vec4(finalPos, 1.);
-  vViewPos  = mvPos.xyz;
-  vNormal   = normalize(normalMatrix * normal);
-  vWorldPos = finalPos;
-  gl_Position = projectionMatrix * mvPos;
+  float t=uTime; vec3 pos=position; vec3 n=normal;
+  float a1=snoise(pos*1.2+vec3(t*.28,0.,0.));
+  float a2=snoise(pos*2.3-vec3(0.,t*.21,t*.13));
+  float a3=snoise(pos*.75+vec3(t*.16,t*.19,0.));
+  float a4=snoise(pos*3.1+vec3(-t*.11,0.,t*.22));
+  vec3 abstractPos=pos+n*(a1*.52+a2*.28+a3*.30+a4*.12);
+  float sn=snoise(pos*5.5+vec3(t*.7))*.038;
+  vec3 spherePos=pos+n*sn;
+  vec3 bPos=pos; bPos.y*=1.55; bPos.x*=0.88;
+  float waist=-smoothstep(-.18,.0,pos.y)*smoothstep(.18,.0,pos.y)*.38;
+  float hips=smoothstep(-.55,-.22,pos.y)*smoothstep(.05,-.22,pos.y)*.20;
+  float chest=smoothstep(.08,.38,pos.y)*smoothstep(.60,.38,pos.y)*.16;
+  float head=smoothstep(.52,.80,pos.y)*.25;
+  float bn=snoise(bPos*1.9+vec3(t*.38))*.22+snoise(bPos*3.5-vec3(t*.22))*.10;
+  vec3 bodyPos=bPos+n*(waist+hips+chest+head+bn);
+  float m01=clamp(uMorph,0.,1.); float m12=clamp(uMorph-1.,0.,1.);
+  vec3 finalPos=mix(mix(abstractPos,spherePos,m01),bodyPos,m12);
+  vec4 mvPos=modelViewMatrix*vec4(finalPos,1.);
+  vViewPos=mvPos.xyz; vNormal=normalize(normalMatrix*normal); vWorldPos=finalPos;
+  gl_Position=projectionMatrix*mvPos;
 }`;
 
-// ── Fragment shader: iridescent chrome ───────────────────
 const fragmentShader = `
-uniform float uTime;
-uniform float uMorph;
-varying vec3 vNormal;
-varying vec3 vViewPos;
-varying vec3 vWorldPos;
-
+uniform float uTime; uniform float uMorph;
+varying vec3 vNormal; varying vec3 vViewPos; varying vec3 vWorldPos;
 void main(){
-  vec3 viewDir = normalize(-vViewPos);
-  float nDotV  = max(dot(vNormal, viewDir), 0.);
-  float fresnel = pow(1. - nDotV, 2.8);
-
-  float tS = uTime * .10;
-  float yF = vWorldPos.y * .5 + .5;
-
-  // palette
-  vec3 deepPurple = vec3(.32,.06,.80);
-  vec3 violet     = vec3(.60,.18,.95);
-  vec3 indigo     = vec3(.28,.18,.95);
-  vec3 cyan       = vec3(.04,.68,.92);
-  vec3 blue       = vec3(.22,.42,.95);
-  vec3 orange     = vec3(1.0,.42,.06);
-  vec3 pink       = vec3(.92,.24,.78);
-  vec3 lavender   = vec3(.72,.52,1.0);
-
-  float t1 = sin(nDotV*3.14159 + tS        ) * .5 + .5;
-  float t2 = sin(yF*6.283      + tS * 1.4  ) * .5 + .5;
-  float t3 = sin((nDotV+yF)*4. - tS * .85  ) * .5 + .5;
-  float t4 = sin(vWorldPos.x*3.+ tS * 1.1  ) * .5 + .5;
-
-  // base iridescent mix
-  vec3 col = mix(deepPurple, violet,   t1);
-  col      = mix(col,        indigo,   t2 * .45);
-  col      = mix(col,        cyan,     t3 * .30);
-  col      = mix(col,        blue,     t4 * .25);
-
-  // fresnel rim: orange/pink flares at silhouette edge
-  float rimPulse = sin(tS * 2.3) * .5 + .5;
-  col = mix(col, orange,   fresnel * .55 * rimPulse);
-  col = mix(col, pink,     fresnel * .40 * (1.-rimPulse));
-  col = mix(col, lavender, fresnel * .25);
-
-  // diffuse from two light sources
-  vec3 L1 = normalize(vec3(1.3, 1.6, 1.0));
-  vec3 L2 = normalize(vec3(-1.0, -.5, .8));
-  float diff1 = max(dot(vNormal, L1), 0.);
-  float diff2 = max(dot(vNormal, L2), 0.) * .3;
-  col *= .25 + .75 * (diff1 + diff2);
-
-  // sharp specular highlights
-  float spec1 = pow(max(dot(reflect(-L1,vNormal),viewDir),0.), 38.);
-  float spec2 = pow(max(dot(reflect(-L2,vNormal),viewDir),0.), 20.) * .4;
-  col += spec1 * mix(vec3(1.,.85,1.), vec3(.55,.75,1.), t1) * 1.1;
-  col += spec2 * vec3(.85,.55,1.) * .5;
-
-  // subtle darkening in deep creases
-  col = pow(col, vec3(1.08));
-
-  gl_FragColor = vec4(col, .97);
+  vec3 viewDir=normalize(-vViewPos);
+  float nDotV=max(dot(vNormal,viewDir),0.);
+  float fresnel=pow(1.-nDotV,2.8);
+  float tS=uTime*.10; float yF=vWorldPos.y*.5+.5;
+  vec3 deepPurple=vec3(.32,.06,.80); vec3 violet=vec3(.60,.18,.95);
+  vec3 indigo=vec3(.28,.18,.95); vec3 cyan=vec3(.04,.68,.92);
+  vec3 blue=vec3(.22,.42,.95); vec3 orange=vec3(1.0,.42,.06);
+  vec3 pink=vec3(.92,.24,.78); vec3 lavender=vec3(.72,.52,1.0);
+  float t1=sin(nDotV*3.14159+tS)*.5+.5;
+  float t2=sin(yF*6.283+tS*1.4)*.5+.5;
+  float t3=sin((nDotV+yF)*4.-tS*.85)*.5+.5;
+  float t4=sin(vWorldPos.x*3.+tS*1.1)*.5+.5;
+  vec3 col=mix(deepPurple,violet,t1);
+  col=mix(col,indigo,t2*.45); col=mix(col,cyan,t3*.30); col=mix(col,blue,t4*.25);
+  float rimPulse=sin(tS*2.3)*.5+.5;
+  col=mix(col,orange,fresnel*.55*rimPulse);
+  col=mix(col,pink,fresnel*.40*(1.-rimPulse));
+  col=mix(col,lavender,fresnel*.25);
+  vec3 L1=normalize(vec3(1.3,1.6,1.0)); vec3 L2=normalize(vec3(-1.,-.5,.8));
+  float diff1=max(dot(vNormal,L1),0.); float diff2=max(dot(vNormal,L2),0.)*.3;
+  col*=.25+.75*(diff1+diff2);
+  float spec1=pow(max(dot(reflect(-L1,vNormal),viewDir),0.),38.);
+  float spec2=pow(max(dot(reflect(-L2,vNormal),viewDir),0.),20.)*.4;
+  col+=spec1*mix(vec3(1.,.85,1.),vec3(.55,.75,1.),t1)*1.1;
+  col+=spec2*vec3(.85,.55,1.)*.5;
+  col=pow(col,vec3(1.08));
+  gl_FragColor=vec4(col,.97);
 }`;
 
-// ── Mesh ─────────────────────────────────────────────────
-const geometry = new THREE.SphereGeometry(1, 120, 120);
-const material = new THREE.ShaderMaterial({
-  vertexShader,
-  fragmentShader,
-  uniforms: {
-    uTime:  { value: 0 },
-    uMorph: { value: 0 },
-  },
-  side: THREE.FrontSide,
-  transparent: true,
-});
-
-const mesh = new THREE.Mesh(geometry, material);
+const mesh = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 120, 120),
+  new THREE.ShaderMaterial({
+    vertexShader, fragmentShader,
+    uniforms: { uTime:{value:0}, uMorph:{value:0} },
+    transparent: true,
+  })
+);
+mesh.position.y = ENTITY_Y;
 scene.add(mesh);
 
-// ── State → morph target ──────────────────────────────────
-// standby=0 (abstract), listening=1 (sphere), thinking=1, speaking=2 (body)
+// ── Particle field ────────────────────────────────────────
+const PC = 2800;
+const pPos   = new Float32Array(PC * 3);
+const pVel   = new Float32Array(PC * 3);
+const pColor = new Float32Array(PC * 3);
+const pSize  = new Float32Array(PC);
+
+const palettes = [
+  [0.60, 0.18, 0.95],  // violet
+  [0.22, 0.42, 0.95],  // blue
+  [0.04, 0.68, 0.92],  // cyan
+  [0.92, 0.24, 0.78],  // pink
+  [0.72, 0.52, 1.00],  // lavender
+];
+
+for (let i = 0; i < PC; i++) {
+  const r = 3 + Math.random() * 12;
+  const theta = Math.random() * Math.PI * 2;
+  const phi   = Math.acos(2 * Math.random() - 1);
+  pPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
+  pPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta) * 0.6;
+  pPos[i*3+2] = r * Math.cos(phi) * 0.4 - 1;
+  pVel[i*3]   = (Math.random() - .5) * 0.004;
+  pVel[i*3+1] = (Math.random() - .5) * 0.004;
+  pVel[i*3+2] = (Math.random() - .5) * 0.001;
+  const c = palettes[Math.floor(Math.random() * palettes.length)];
+  pColor[i*3]   = c[0]; pColor[i*3+1] = c[1]; pColor[i*3+2] = c[2];
+  pSize[i] = 0.5 + Math.random() * 2.5;
+}
+
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+pGeo.setAttribute('color',    new THREE.BufferAttribute(pColor, 3));
+pGeo.setAttribute('size',     new THREE.BufferAttribute(pSize, 1));
+
+const pMat = new THREE.ShaderMaterial({
+  vertexShader: `
+    attribute float size;
+    attribute vec3 color;
+    varying vec3 vColor;
+    varying float vAlpha;
+    void main(){
+      vColor = color;
+      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+      vAlpha = clamp(1.0 - length(mvPos.xyz) / 18.0, 0.0, 1.0);
+      gl_PointSize = size * (280.0 / -mvPos.z);
+      gl_Position = projectionMatrix * mvPos;
+    }`,
+  fragmentShader: `
+    varying vec3 vColor;
+    varying float vAlpha;
+    void main(){
+      float d = length(gl_PointCoord - 0.5) * 2.0;
+      if(d > 1.0) discard;
+      float alpha = (1.0 - d*d) * vAlpha * 0.75;
+      gl_FragColor = vec4(vColor, alpha);
+    }`,
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+  vertexColors: true,
+});
+
+const particles = new THREE.Points(pGeo, pMat);
+scene.add(particles);
+
+// ── Orbital ring ─────────────────────────────────────────
+// A slow flat ring of brighter particles orbiting the entity
+const OR = 180;
+const orPos   = new Float32Array(OR * 3);
+const orColor = new Float32Array(OR * 3);
+const orSize  = new Float32Array(OR);
+for (let i = 0; i < OR; i++) {
+  const a = (i / OR) * Math.PI * 2;
+  const rad = 1.8 + Math.sin(i * 0.4) * 0.25;
+  orPos[i*3]   = Math.cos(a) * rad;
+  orPos[i*3+1] = ENTITY_Y + (Math.random() - .5) * 0.15;
+  orPos[i*3+2] = Math.sin(a) * rad * 0.3;
+  const c = palettes[i % palettes.length];
+  orColor[i*3] = c[0]; orColor[i*3+1] = c[1]; orColor[i*3+2] = c[2];
+  orSize[i] = 1.0 + Math.random() * 2.0;
+}
+const orGeo = new THREE.BufferGeometry();
+orGeo.setAttribute('position', new THREE.BufferAttribute(orPos, 3));
+orGeo.setAttribute('color',    new THREE.BufferAttribute(orColor, 3));
+orGeo.setAttribute('size',     new THREE.BufferAttribute(orSize, 1));
+const orPoints = new THREE.Points(orGeo, pMat);
+scene.add(orPoints);
+
+// ── Mouse tracking ────────────────────────────────────────
+const mouse  = { x: 0, y: 0, nx: 0, ny: 0 };   // current (lerped)
+const mouseT = { x: 0, y: 0, nx: 0, ny: 0 };   // target (raw)
+
+const cursor      = document.getElementById('cursor');
+const cursorTrail = document.getElementById('cursor-trail');
+
+window.addEventListener('mousemove', e => {
+  mouseT.x  = e.clientX;
+  mouseT.y  = e.clientY;
+  mouseT.nx = (e.clientX / W) * 2 - 1;
+  mouseT.ny = -(e.clientY / H) * 2 + 1;
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top  = e.clientY + 'px';
+});
+
+window.addEventListener('click', e => {
+  // Ripple at click position
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  r.style.left   = e.clientX + 'px';
+  r.style.top    = e.clientY + 'px';
+  r.style.width  = '10px';
+  r.style.height = '10px';
+  document.body.appendChild(r);
+  setTimeout(() => r.remove(), 900);
+
+  // Burst particles outward (fast scatter)
+  for (let i = 0; i < PC; i++) {
+    const dx = pPos[i*3]   - (mouseT.nx * 6);
+    const dy = pPos[i*3+1] - (mouseT.ny * 3);
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 3) {
+      const force = (3 - dist) * 0.06;
+      pVel[i*3]   += dx / dist * force;
+      pVel[i*3+1] += dy / dist * force;
+    }
+  }
+});
+
+// Cursor grows over interactive elements
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('big'));
+  el.addEventListener('mouseleave', () => cursor.classList.remove('big'));
+});
+
+// ── Floating financial data ───────────────────────────────
+const DATA_ITEMS = [
+  '$AAPL +2.34%','RSI: 67.4','NVDA BULLISH','VOL: 2.8x avg',
+  'MA200 $183.40','BEARISH H&S','$TSLA -1.2%','BREAKOUT','$BTC 68,420',
+  'MACD ↑','SUPPORT: $180','DARK CLOUD','EPS +18%','OVERSOLD',
+  '$SPY 0.4%','RESISTANCE','HAMMER ↑','SHORT FLOAT: 4%','GOLDEN CROSS',
+  'P/E: 28.4','52W HIGH','VOLUME SURGE','INVERTED H&S','MORNING STAR',
+  '$NVDA +4.1%','BEARISH ENG.','DOJI TOP','CONSOLIDATING','$AMZN +1.8%',
+];
+const DATA_COLORS = ['rgba(155,94,255,{a})','rgba(94,171,255,{a})','rgba(192,132,252,{a})','rgba(129,200,216,{a})'];
+
+function spawnData() {
+  const el    = document.createElement('div');
+  el.className = 'df';
+  const text  = DATA_ITEMS[Math.floor(Math.random() * DATA_ITEMS.length)];
+  const col   = DATA_COLORS[Math.floor(Math.random() * DATA_COLORS.length)];
+  const alpha = 0.08 + Math.random() * 0.18;
+  el.textContent  = text;
+  el.style.color  = col.replace('{a}', alpha.toFixed(2));
+  el.style.left   = (2 + Math.random() * 96) + 'vw';
+  el.style.bottom = '-24px';
+  el.style.fontSize = (8 + Math.random() * 5) + 'px';
+  document.getElementById('data-layer').appendChild(el);
+
+  const dur  = 9000 + Math.random() * 8000;
+  const rise = (H + 40);
+  el.animate(
+    [{ transform:'translateY(0)', opacity:0 },
+     { transform:`translateY(-${rise*0.08}px)`, opacity:1, offset:0.08 },
+     { transform:`translateY(-${rise*0.88}px)`, opacity:alpha*3, offset:0.88 },
+     { transform:`translateY(-${rise}px)`, opacity:0 }],
+    { duration: dur, easing:'linear' }
+  ).onfinish = () => el.remove();
+}
+
+setInterval(spawnData, 500);
+for (let i = 0; i < 12; i++) setTimeout(spawnData, i * 300);
+
+// ── State machine ─────────────────────────────────────────
 let targetMorph  = 0;
 let currentMorph = 0;
 
 function setAllenState(s) {
-  const stateEl = document.getElementById('stage');
-  stateEl.dataset.state = s;
+  document.getElementById('stage').dataset.state = s;
   const st = document.getElementById('status-text');
   const at = document.getElementById('analyzing-text');
-
   const map = {
-    standby:   { label:'Standby',    cls:'',          morph:0, analyze:false },
-    listening: { label:'Listening',  cls:'listening', morph:1, analyze:false },
-    thinking:  { label:'Processing', cls:'thinking',  morph:1, analyze:true  },
-    speaking:  { label:'Speaking',   cls:'speaking',  morph:2, analyze:false },
+    standby:  { label:'Standby',    cls:'',         morph:0, analyze:false },
+    listening:{ label:'Listening',  cls:'listening',morph:1, analyze:false },
+    thinking: { label:'Processing', cls:'thinking', morph:1, analyze:true  },
+    speaking: { label:'Speaking',   cls:'speaking', morph:2, analyze:false },
   };
   const cfg = map[s] || map.standby;
-  targetMorph          = cfg.morph;
-  st.textContent       = cfg.label;
-  st.className         = cfg.cls;
+  targetMorph    = cfg.morph;
+  st.textContent = cfg.label;
+  st.className   = cfg.cls;
   at.classList.toggle('visible', cfg.analyze);
 }
-
 window.__setAllenState = setAllenState;
 
 // ── Animation loop ────────────────────────────────────────
 const clock = new THREE.Clock();
+let time = 0;
 
 function animate() {
   requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
+  time = clock.getElapsedTime();
 
-  material.uniforms.uTime.value = t;
+  // Lerp mouse
+  mouse.x  += (mouseT.x  - mouse.x)  * 0.06;
+  mouse.y  += (mouseT.y  - mouse.y)  * 0.06;
+  mouse.nx += (mouseT.nx - mouse.nx) * 0.06;
+  mouse.ny += (mouseT.ny - mouse.ny) * 0.06;
 
-  // smooth morph transition
+  // Update cursor trail
+  cursorTrail.style.left = mouse.x + 'px';
+  cursorTrail.style.top  = mouse.y + 'px';
+
+  // Entity uniforms
+  mesh.material.uniforms.uTime.value = time;
   currentMorph += (targetMorph - currentMorph) * 0.025;
-  material.uniforms.uMorph.value = currentMorph;
+  mesh.material.uniforms.uMorph.value = currentMorph;
 
-  // gentle continuous rotation
-  mesh.rotation.y =  t * 0.14;
-  mesh.rotation.x =  Math.sin(t * 0.09) * 0.18;
-  mesh.rotation.z =  Math.sin(t * 0.07) * 0.08;
+  // Entity gentle rotation + mouse parallax
+  mesh.rotation.y = time * 0.14 + mouse.nx * 0.25;
+  mesh.rotation.x = Math.sin(time * 0.09) * 0.18 - mouse.ny * 0.15;
+  mesh.rotation.z = Math.sin(time * 0.07) * 0.08;
+
+  // Camera subtle drift with mouse
+  camera.position.x += (mouse.nx * 0.4 - camera.position.x) * 0.03;
+  camera.position.y += (mouse.ny * 0.25 + ENTITY_Y * 0.3 - camera.position.y) * 0.03;
+
+  // Particle field animation
+  const pPositions = pGeo.attributes.position.array;
+  const mxW = mouse.nx * 5, myW = mouse.ny * 2.5;
+  for (let i = 0; i < PC; i++) {
+    // Drift
+    pPositions[i*3]   += pVel[i*3];
+    pPositions[i*3+1] += pVel[i*3+1];
+    pPositions[i*3+2] += pVel[i*3+2];
+
+    // Mouse repulsion
+    const dx = pPositions[i*3]   - mxW;
+    const dy = pPositions[i*3+1] - myW;
+    const distSq = dx*dx + dy*dy;
+    if (distSq < 4 && distSq > 0.001) {
+      const inv = 0.006 / distSq;
+      pVel[i*3]   += dx * inv;
+      pVel[i*3+1] += dy * inv;
+    }
+
+    // Damping
+    pVel[i*3]   *= 0.98;
+    pVel[i*3+1] *= 0.98;
+    pVel[i*3+2] *= 0.99;
+
+    // Wrap bounds
+    if (Math.abs(pPositions[i*3])   > 14) pVel[i*3]   *= -1;
+    if (Math.abs(pPositions[i*3+1]) > 8 ) pVel[i*3+1] *= -1;
+    if (Math.abs(pPositions[i*3+2]) > 3 ) pVel[i*3+2] *= -1;
+  }
+  pGeo.attributes.position.needsUpdate = true;
+
+  // Orbital ring rotation
+  orPoints.rotation.y = time * 0.22;
+  orPoints.rotation.x = Math.sin(time * 0.15) * 0.12;
 
   renderer.render(scene, camera);
 }
 animate();
 
-// ── Transcript helpers ────────────────────────────────────
+// ── Resize ────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+});
+
+// ── Transcript ────────────────────────────────────────────
 function addMessage(role, text) {
   const wrap = document.getElementById('transcript');
   const hint = wrap.querySelector('.hint');
@@ -424,10 +633,9 @@ function addMessage(role, text) {
   div.scrollIntoView({behavior:'smooth', block:'end'});
 }
 
-// ── SSE connection ────────────────────────────────────────
+// ── SSE ───────────────────────────────────────────────────
 const connDot   = document.getElementById('conn-dot');
 const connLabel = document.getElementById('conn-label');
-
 function connect() {
   const es = new EventSource('/voice/stream');
   es.onopen = () => { connDot.classList.add('live'); connLabel.textContent='Live'; };
@@ -445,7 +653,6 @@ function connect() {
     setTimeout(connect, 3000);
   };
 }
-
 connect();
 setAllenState('standby');
 </script>
