@@ -68,6 +68,8 @@ VOICE_SYSTEM = """You are the McAllen Voice Assistant — a sharp, concise finan
 - get_history: retrieve the user's past analyses (optional: filter by ticker)
 - explain_term: explain a finance term in plain English
 - search_web: search the web for earnings, news, filings, or macro data
+- get_watchlist: get all active watchlist tickers with their entry, stop, and target levels
+- get_alerts: get recent alerts that fired — when, which ticker, price, and signal
 
 ## Rules
 - Answer first, details on request. Keep spoken responses under 4 sentences unless asked for more.
@@ -134,6 +136,24 @@ TOOLS = [
             "required": ["query"],
         },
     },
+    {
+        "name": "get_watchlist",
+        "description": "Get all active watchlist tickers with their entry price, stop loss, target, and R/R ratio.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
+    {
+        "name": "get_alerts",
+        "description": "Get recent alerts that fired — ticker, price at alert, pattern detected, and when it fired.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "description": "Number of alerts to return (default 10)"}
+            },
+        },
+    },
 ]
 
 # ── Tool execution ─────────────────────────────────────────────────────────────
@@ -188,6 +208,40 @@ def run_tool(name: str, inputs: dict) -> str:
             r = http.post(f"{BACKEND_URL}/explain", json={"text": inputs["term"]})
             r.raise_for_status()
             return r.json()["explanation"]
+
+        elif name == "get_watchlist":
+            r = http.get(f"{BACKEND_URL}/watchlist")
+            r.raise_for_status()
+            items = r.json()
+            if not items:
+                return "Your watchlist is empty."
+            lines = []
+            for item in items:
+                lines.append(
+                    f"{item['ticker']} — entry ${item.get('entry_price','?')} | "
+                    f"stop ${item.get('stop_loss','?')} | "
+                    f"target ${item.get('target','?')} | "
+                    f"R/R {item.get('rr_ratio','?')} | "
+                    f"added {item.get('created_at','')[:10]}"
+                )
+            return f"{len(items)} active watchlist item(s):\n" + "\n".join(lines)
+
+        elif name == "get_alerts":
+            limit = inputs.get("limit", 10)
+            r = http.get(f"{BACKEND_URL}/alerts", params={"limit": limit})
+            r.raise_for_status()
+            alerts = r.json()
+            if not alerts:
+                return "No alerts have fired yet."
+            lines = []
+            for a in alerts:
+                fired = a.get("fired_at", "")[:16].replace("T", " ")
+                lines.append(
+                    f"{a['ticker']} — ${a.get('price','?')} | "
+                    f"{a.get('pattern','').replace('_',' ')} | "
+                    f"{fired} UTC"
+                )
+            return f"{len(alerts)} alert(s) fired:\n" + "\n".join(lines)
 
         elif name == "search_web":
             # Use Claude's built-in web search via a one-shot sub-call

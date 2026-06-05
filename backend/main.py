@@ -5,6 +5,7 @@ import asyncio
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 import anthropic
 from dotenv import load_dotenv
 
@@ -51,6 +52,35 @@ def init_db():
         with _pg() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
+                    CREATE TABLE IF NOT EXISTS watchlist (
+                        id           SERIAL PRIMARY KEY,
+                        ticker       TEXT NOT NULL,
+                        entry_price  REAL,
+                        stop_loss    REAL,
+                        target       REAL,
+                        rr_ratio     TEXT,
+                        verdict      TEXT,
+                        analysis_id  INTEGER,
+                        active       BOOLEAN DEFAULT true,
+                        alerted_at   TIMESTAMPTZ,
+                        created_at   TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS alerts_log (
+                        id            SERIAL PRIMARY KEY,
+                        ticker        TEXT NOT NULL,
+                        price         REAL,
+                        entry_price   REAL,
+                        stop_loss     REAL,
+                        target        REAL,
+                        rr_ratio      TEXT,
+                        pattern       TEXT,
+                        signal        TEXT,
+                        fired_at      TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS analyses (
                         id            SERIAL PRIMARY KEY,
                         ticker        TEXT NOT NULL,
@@ -66,6 +96,35 @@ def init_db():
             conn.commit()
     else:
         with _sqlite() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS watchlist (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticker       TEXT NOT NULL,
+                    entry_price  REAL,
+                    stop_loss    REAL,
+                    target       REAL,
+                    rr_ratio     TEXT,
+                    verdict      TEXT,
+                    analysis_id  INTEGER,
+                    active       INTEGER DEFAULT 1,
+                    alerted_at   TEXT,
+                    created_at   TEXT DEFAULT (datetime('now'))
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS alerts_log (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticker       TEXT NOT NULL,
+                    price        REAL,
+                    entry_price  REAL,
+                    stop_loss    REAL,
+                    target       REAL,
+                    rr_ratio     TEXT,
+                    pattern      TEXT,
+                    signal       TEXT,
+                    fired_at     TEXT DEFAULT (datetime('now'))
+                )
+            """)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS analyses (
                     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -467,6 +526,126 @@ async def price(ticker: str):
 @app.get("/health")
 async def health():
     return {"status": "ok", "model": "claude-opus-4-8"}
+
+
+# ── Watchlist endpoints ────────────────────────────────────────────────────────
+
+class WatchlistItem(BaseModel):
+    ticker:       str
+    entry_price:  Optional[float] = None
+    stop_loss:    Optional[float] = None
+    target:       Optional[float] = None
+    rr_ratio:     Optional[str]   = None
+    verdict:      Optional[str]   = None
+    analysis_id:  Optional[int]   = None
+
+def _parse_trade_setup(analysis_text: str) -> dict:
+    """Extract entry, stop, target and R/R from a saved analysis text."""
+    result = {}
+    entry_match = re.search(r"Entry trigger[:\s]+\$?([\d,.]+)", analysis_text, re.I)
+    stop_match  = re.search(r"Stop loss[:\s]+\$?([\d,.]+)", analysis_text, re.I)
+    target_match= re.search(r"Target[:\s]+\$?([\d,.]+)", analysis_text, re.I)
+    rr_match    = re.search(r"Risk/Reward[:\s]+([\d.]+):1", analysis_text, re.I)
+    if entry_match:  result["entry_price"] = float(entry_match.group(1).replace(",", ""))
+    if stop_match:   result["stop_loss"]   = float(stop_match.group(1).replace(",", ""))
+    if target_match: result["target"]      = float(target_match.group(1).replace(",", ""))
+    if rr_match:     result["rr_ratio"]    = f"{rr_match.group(1)}:1"
+    return result
+
+@app.post("/watchlist")
+async def add_to_watchlist(item: WatchlistItem):
+    ticker = item.ticker.upper().strip()
+    entry  = item.entry_price
+    stop   = item.stop_loss
+    target = item.target
+    rr     = item.rr_ratio
+    verdict= item.verdict
+
+    # If analysis_id provided, auto-parse trade setup from analysis text
+    if item.analysis_id and not entry:
+        try:
+            if DATABASE_URL:
+                import psycopg2.extras
+                with _pg() as conn:
+                    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                        cur.execute("SELECT analysis_text, verdict FROM analyses WHERE id = %s", (item.analysis_id,))
+                        row = cur.fetchone()
+            else:
+                with _sqlite() as conn:
+                    row = conn.execute("SELECT analysis_text, verdict FROM analyses WHERE id = ?", (item.analysis_id,)).fetchone()
+            if row:
+                parsed = _parse_trade_setup(row["analysis_text"])
+                entry  = parsed.get("entry_price", entry)
+                stop   = parsed.get("stop_loss", stop)
+                target = parsed.get("target", target)
+                rr     = parsed.get("rr_ratio", rr)
+                verdict= verdict or row["verdict"]
+        except Exception as e:
+            print(f"[watchlist] Could not parse analysis {item.analysis_id}: {e}")
+
+    if DATABASE_URL:
+        with _pg() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO watchlist (ticker, entry_price, stop_loss, target, rr_ratio, verdict, analysis_id)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+                    (ticker, entry, stop, target, rr, verdict, item.analysis_id)
+                )
+                new_id = cur.fetchone()[0]
+            conn.commit()
+    else:
+        with _sqlite() as conn:
+            cur = conn.execute(
+                """INSERT INTO watchlist (ticker, entry_price, stop_loss, target, rr_ratio, verdict, analysis_id)
+                   VALUES (?,?,?,?,?,?,?)""",
+                (ticker, entry, stop, target, rr, verdict, item.analysis_id)
+            )
+            new_id = cur.lastrowid
+    return {"id": new_id, "ticker": ticker, "entry_price": entry, "stop_loss": stop, "target": target, "rr_ratio": rr}
+
+@app.get("/watchlist")
+async def get_watchlist():
+    if DATABASE_URL:
+        import psycopg2.extras
+        with _pg() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM watchlist WHERE active = true ORDER BY created_at DESC")
+                return [dict(r) for r in cur.fetchall()]
+    else:
+        with _sqlite() as conn:
+            rows = conn.execute(
+                "SELECT * FROM watchlist WHERE active = 1 ORDER BY created_at DESC"
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+@app.delete("/watchlist/{watchlist_id}")
+async def remove_from_watchlist(watchlist_id: int):
+    if DATABASE_URL:
+        with _pg() as conn:
+            with conn.cursor() as cur:
+                cur.execute("UPDATE watchlist SET active = false WHERE id = %s", (watchlist_id,))
+            conn.commit()
+    else:
+        with _sqlite() as conn:
+            conn.execute("UPDATE watchlist SET active = 0 WHERE id = ?", (watchlist_id,))
+    return {"removed": watchlist_id}
+
+@app.get("/alerts")
+async def get_alerts(limit: int = 20):
+    if DATABASE_URL:
+        import psycopg2.extras
+        with _pg() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT * FROM alerts_log ORDER BY fired_at DESC LIMIT %s", (limit,)
+                )
+                return [dict(r) for r in cur.fetchall()]
+    else:
+        with _sqlite() as conn:
+            rows = conn.execute(
+                "SELECT * FROM alerts_log ORDER BY fired_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+        return [dict(r) for r in rows]
 
 
 class ExplainRequest(BaseModel):
