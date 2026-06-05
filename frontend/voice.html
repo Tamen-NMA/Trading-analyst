@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Allen — Voice Interface</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #030712;
+  color: #e2e8f0;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* Subtle hex grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(16,185,129,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16,185,129,0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Header ── */
+header {
+  position: relative; z-index: 10;
+  width: 100%;
+  padding: 18px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(16,185,129,0.08);
+  backdrop-filter: blur(8px);
+}
+.brand      { letter-spacing: 10px; font-size: 14px; font-weight: 700; color: #10b981; text-transform: uppercase; }
+.brand-sub  { font-size: 9px; letter-spacing: 4px; color: #374151; text-transform: uppercase; margin-top: 3px; }
+.conn-badge { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #374151; display: flex; align-items: center; gap: 6px; }
+.conn-dot   { width: 5px; height: 5px; border-radius: 50%; background: #374151; transition: background 0.4s; }
+.conn-dot.live { background: #10b981; box-shadow: 0 0 6px #10b981; animation: dot-blink 2s ease-in-out infinite; }
+.back-link  { font-size: 10px; letter-spacing: 3px; color: #374151; text-decoration: none; text-transform: uppercase; transition: color 0.2s; }
+.back-link:hover { color: #10b981; }
+
+/* ── Orb stage ── */
+.stage {
+  position: relative; z-index: 5;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 56px 0 36px;
+}
+
+/* Ambient background glow that changes with state */
+.stage::after {
+  content: '';
+  position: absolute;
+  width: 480px; height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  transition: background 0.8s ease;
+}
+.stage[data-state="listening"]::after { background: radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%); }
+.stage[data-state="thinking"]::after  { background: radial-gradient(circle, rgba(6,182,212,0.1)  0%, transparent 70%); }
+.stage[data-state="speaking"]::after  { background: radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%); }
+
+.orb {
+  position: relative;
+  width: 260px; height: 260px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Concentric expanding rings ── */
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(16,185,129,0.12);
+  pointer-events: none;
+  opacity: 0;
+  animation: ring-expand 4s ease-out infinite;
+}
+.r1 { width: 280px; height: 280px; animation-delay: 0s; }
+.r2 { width: 320px; height: 320px; animation-delay: 1s; }
+.r3 { width: 360px; height: 360px; animation-delay: 2s; }
+.r4 { width: 400px; height: 400px; animation-delay: 3s; }
+
+@keyframes ring-expand {
+  0%   { opacity: 0;   transform: scale(0.88); }
+  15%  { opacity: 0.55; }
+  100% { opacity: 0;   transform: scale(1.06); }
+}
+
+/* Listening: faster, greener rings */
+.orb[data-state="listening"] .ring {
+  border-color: rgba(16,185,129,0.35);
+  animation-duration: 1.6s;
+}
+/* Thinking: fast cyan rings */
+.orb[data-state="thinking"] .ring {
+  border-color: rgba(6,182,212,0.4);
+  animation-duration: 1.1s;
+}
+/* Speaking: blue rings */
+.orb[data-state="speaking"] .ring {
+  border-color: rgba(59,130,246,0.35);
+  animation-duration: 0.9s;
+}
+
+/* ── 28 radial waveform bars ── */
+.bars {
+  position: absolute;
+  width: 260px; height: 260px;
+  pointer-events: none;
+}
+.bar-wrap {
+  position: absolute;
+  width: 2px;
+  height: 130px;
+  left: calc(50% - 1px);
+  top: calc(50% - 130px);
+  transform-origin: 50% 100%;
+}
+.bar-inner {
+  position: absolute;
+  top: 6px;
+  width: 2.5px;
+  height: 20px;
+  left: -0.25px;
+  background: linear-gradient(to bottom, #06b6d4, #10b981);
+  border-radius: 2px;
+  transform-origin: center top;
+  box-shadow: 0 0 5px rgba(16,185,129,0.4);
+  animation: bar-idle 3.5s ease-in-out infinite;
+}
+
+@keyframes bar-idle     { 0%,100%{ transform:scaleY(0.25); opacity:0.18; } 50%{ transform:scaleY(0.6);  opacity:0.35; } }
+@keyframes bar-listen   { 0%,100%{ transform:scaleY(0.5);  opacity:0.55; } 50%{ transform:scaleY(1.6);  opacity:0.9;  } }
+@keyframes bar-think    { 0%,100%{ transform:scaleY(0.4);  opacity:0.5;  } 50%{ transform:scaleY(2.2);  opacity:1;    } }
+@keyframes bar-speak    { 0%,100%{ transform:scaleY(0.6);  opacity:0.6;  } 50%{ transform:scaleY(1.8);  opacity:1;    } }
+
+.orb[data-state="listening"] .bar-inner {
+  background: linear-gradient(to bottom, #6ee7b7, #10b981);
+  box-shadow: 0 0 6px rgba(16,185,129,0.6);
+  animation-name: bar-listen;
+}
+.orb[data-state="thinking"] .bar-inner {
+  background: linear-gradient(to bottom, #67e8f9, #06b6d4);
+  box-shadow: 0 0 7px rgba(6,182,212,0.7);
+  animation-name: bar-think;
+}
+.orb[data-state="speaking"] .bar-inner {
+  background: linear-gradient(to bottom, #93c5fd, #3b82f6);
+  box-shadow: 0 0 6px rgba(59,130,246,0.6);
+  animation-name: bar-speak;
+}
+
+/* ── Core sphere ── */
+.core {
+  position: absolute;
+  width: 150px; height: 150px;
+  border-radius: 50%;
+  z-index: 3;
+  background: radial-gradient(circle at 38% 32%, #0d4f3c 0%, #041f15 55%, #020a07 100%);
+  box-shadow:
+    0 0 30px rgba(16,185,129,0.22),
+    0 0 70px rgba(16,185,129,0.08),
+    inset 0 0 30px rgba(6,182,212,0.04),
+    inset 1px 1px 0 rgba(255,255,255,0.03);
+  animation: core-breathe 3.5s ease-in-out infinite;
+  transition: background 0.6s, box-shadow 0.6s;
+}
+
+@keyframes core-breathe {
+  0%,100%{ box-shadow: 0 0 30px rgba(16,185,129,.22), 0 0 70px rgba(16,185,129,.08), inset 0 0 30px rgba(6,182,212,.04); }
+  50%    { box-shadow: 0 0 50px rgba(16,185,129,.42), 0 0 110px rgba(16,185,129,.15), inset 0 0 50px rgba(6,182,212,.08); }
+}
+
+.orb[data-state="listening"] .core {
+  background: radial-gradient(circle at 38% 32%, #0d6b4a 0%, #052e1e 55%, #020a07 100%);
+  animation: core-listen 1s ease-in-out infinite;
+}
+@keyframes core-listen {
+  0%,100%{ box-shadow: 0 0 45px rgba(16,185,129,.45), 0 0 90px rgba(16,185,129,.18), inset 0 0 40px rgba(16,185,129,.1); }
+  50%    { box-shadow: 0 0 65px rgba(16,185,129,.65), 0 0 130px rgba(16,185,129,.28), inset 0 0 60px rgba(16,185,129,.15); }
+}
+
+.orb[data-state="thinking"] .core {
+  background: radial-gradient(circle at 38% 32%, #0c4a5c 0%, #031c2e 55%, #020507 100%);
+  animation: core-think 0.7s ease-in-out infinite;
+}
+@keyframes core-think {
+  0%,100%{ box-shadow: 0 0 55px rgba(6,182,212,.55), 0 0 110px rgba(6,182,212,.2), inset 0 0 50px rgba(16,185,129,.12); }
+  50%    { box-shadow: 0 0 80px rgba(6,182,212,.75), 0 0 160px rgba(6,182,212,.3),  inset 0 0 70px rgba(16,185,129,.18); }
+}
+
+.orb[data-state="speaking"] .core {
+  background: radial-gradient(circle at 38% 32%, #0d1f50 0%, #050d2e 55%, #020507 100%);
+  animation: core-speak 0.5s ease-in-out infinite;
+}
+@keyframes core-speak {
+  0%,100%{ box-shadow: 0 0 50px rgba(59,130,246,.5),  0 0 100px rgba(59,130,246,.18), inset 0 0 45px rgba(6,182,212,.1); }
+  50%    { box-shadow: 0 0 75px rgba(59,130,246,.72), 0 0 150px rgba(59,130,246,.28), inset 0 0 65px rgba(6,182,212,.16); }
+}
+
+/* Lens flare dot inside core */
+.core::after {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,0.12), transparent);
+  top: 22%; left: 26%;
+}
+
+/* ── Status area ── */
+.status-area {
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulse-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+  animation: dot-blink 2.5s ease-in-out infinite;
+}
+@keyframes dot-blink { 0%,100%{ opacity:1; } 50%{ opacity:0.15; } }
+
+#status-text {
+  font-size: 10px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: #4b5563;
+  transition: color 0.4s;
+}
+#status-text.listening { color: #10b981; }
+#status-text.thinking  { color: #06b6d4; }
+#status-text.speaking  { color: #60a5fa; }
+
+#analyzing-text {
+  font-size: 9px;
+  letter-spacing: 7px;
+  text-transform: uppercase;
+  color: #06b6d4;
+  opacity: 0;
+  transition: opacity 0.5s;
+  animation: text-flicker 2.4s ease-in-out infinite;
+}
+#analyzing-text.visible { opacity: 1; }
+
+@keyframes text-flicker {
+  0%,89%,100%{ opacity: 1; }
+  92%{ opacity: 0.2; }
+  96%{ opacity: 1; }
+  98%{ opacity: 0.4; }
+}
+
+/* ── Transcript panel ── */
+.transcript-wrap {
+  position: relative; z-index: 5;
+  width: 100%;
+  max-width: 700px;
+  padding: 0 28px 100px;
+  flex: 1;
+}
+
+.transcript-header {
+  font-size: 8px;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: #1f2937;
+  border-top: 1px solid #0f172a;
+  padding-top: 18px;
+  margin-bottom: 20px;
+}
+
+.msg {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 20px;
+  animation: msg-in 0.35s ease;
+}
+@keyframes msg-in { from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+
+.msg-av {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  margin-top: 2px;
+}
+.msg.you   .msg-av { background: rgba(16,185,129,0.1); color: #10b981; border: 1px solid rgba(16,185,129,0.25); }
+.msg.allen .msg-av { background: rgba(6,182,212,0.1);  color: #06b6d4; border: 1px solid rgba(6,182,212,0.25); }
+
+.msg-body {}
+.msg-who  { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 5px; }
+.msg.you   .msg-who { color: #10b981; }
+.msg.allen .msg-who { color: #06b6d4; }
+.msg-text { font-size: 14px; line-height: 1.65; color: #9ca3af; }
+.msg.allen .msg-text { color: #d1d5db; }
+
+/* Wake word hint */
+.hint {
+  font-size: 10px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #1f2937;
+  text-align: center;
+  padding: 24px 0 12px;
+  animation: hint-fade 4s ease-in-out infinite;
+}
+@keyframes hint-fade { 0%,40%,100%{ opacity:0.5; } 20%{ opacity:1; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="brand">A · L · L · E · N</div>
+    <div class="brand-sub">McAllen Trading Assistant</div>
+  </div>
+  <div class="conn-badge">
+    <div class="conn-dot" id="conn-dot"></div>
+    <span id="conn-label">Connecting…</span>
+  </div>
+  <a class="back-link" href="/">← Trading App</a>
+</header>
+
+<div class="stage" id="stage" data-state="standby">
+
+  <div class="orb" id="orb" data-state="standby">
+    <!-- Concentric rings -->
+    <div class="ring r1"></div>
+    <div class="ring r2"></div>
+    <div class="ring r3"></div>
+    <div class="ring r4"></div>
+    <!-- 28 radial waveform bars (JS-generated) -->
+    <div class="bars" id="bars"></div>
+    <!-- Core -->
+    <div class="core"></div>
+  </div>
+
+  <div class="status-area">
+    <div class="status-line">
+      <div class="pulse-dot"></div>
+      <span id="status-text">Standby</span>
+    </div>
+    <div id="analyzing-text">Analyzing . . .</div>
+  </div>
+
+</div>
+
+<div class="transcript-wrap">
+  <div class="transcript-header">Conversation Log</div>
+  <div id="transcript">
+    <div class="hint">Say &quot;Hello Allen&quot; to begin</div>
+  </div>
+</div>
+
+<script>
+// ── Build 28 radial waveform bars ─────────────────────────
+const barsEl = document.getElementById('bars');
+for (let i = 0; i < 28; i++) {
+  const wrap  = document.createElement('div');
+  wrap.className = 'bar-wrap';
+  wrap.style.transform = `rotate(${i * (360 / 28)}deg)`;
+  const inner = document.createElement('div');
+  inner.className = 'bar-inner';
+  inner.style.animationDuration = `${1.1 + Math.random() * 0.8}s`;
+  inner.style.animationDelay    = `${(i / 28) * 1.4}s`;
+  wrap.appendChild(inner);
+  barsEl.appendChild(wrap);
+}
+
+// ── State machine ─────────────────────────────────────────
+const orb         = document.getElementById('orb');
+const stage       = document.getElementById('stage');
+const statusText  = document.getElementById('status-text');
+const analyzeTxt  = document.getElementById('analyzing-text');
+
+const CFG = {
+  standby:  { label: 'Standby',      cls: '',          analyze: false },
+  listening:{ label: 'Listening',    cls: 'listening', analyze: false },
+  thinking: { label: 'Processing',   cls: 'thinking',  analyze: true  },
+  speaking: { label: 'Speaking',     cls: 'speaking',  analyze: false },
+};
+
+function setState(s) {
+  const c = CFG[s] || CFG.standby;
+  orb.dataset.state   = s;
+  stage.dataset.state = s;
+  statusText.textContent = c.label;
+  statusText.className   = c.cls;
+  analyzeTxt.classList.toggle('visible', c.analyze);
+}
+
+// ── Transcript ────────────────────────────────────────────
+function addMessage(role, text) {
+  const wrap = document.getElementById('transcript');
+  // Remove hint on first message
+  const hint = wrap.querySelector('.hint');
+  if (hint) hint.remove();
+
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-av">${role === 'you' ? 'YOU' : 'A'}</div>
+    <div class="msg-body">
+      <div class="msg-who">${role === 'you' ? 'You' : 'Allen'}</div>
+      <div class="msg-text">${text}</div>
+    </div>`;
+  wrap.appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+}
+
+// ── SSE connection ────────────────────────────────────────
+const connDot   = document.getElementById('conn-dot');
+const connLabel = document.getElementById('conn-label');
+
+function connect() {
+  const es = new EventSource('/voice/stream');
+
+  es.onopen = () => {
+    connDot.classList.add('live');
+    connLabel.textContent = 'Live';
+  };
+
+  es.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'ping') return;
+    if (msg.type === 'status')     setState(msg.state);
+    if (msg.type === 'transcript') addMessage(msg.role, msg.text);
+  };
+
+  es.onerror = () => {
+    connDot.classList.remove('live');
+    connLabel.textContent = 'Reconnecting…';
+    setState('standby');
+    es.close();
+    setTimeout(connect, 3000);
+  };
+}
+
+connect();
+setState('standby');
+</script>
+</body>
+</html>

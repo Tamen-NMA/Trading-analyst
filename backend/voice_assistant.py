@@ -46,6 +46,14 @@ WHISPER_MODEL      = "base"   # tiny/base/small/medium — base is fast and accu
 claude  = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 http    = httpx.Client(timeout=30)
 
+def emit(event_type: str, **kwargs):
+    """Push a state/transcript event to the web UI (fire-and-forget)."""
+    try:
+        http.post(f"{BACKEND_URL}/voice/event",
+                  json={"type": event_type, **kwargs}, timeout=2)
+    except Exception:
+        pass
+
 # ── Load Whisper once at startup ───────────────────────────────────────────────
 print("[voice] Loading Whisper model…")
 stt_model = whisper.load_model(WHISPER_MODEL)
@@ -357,13 +365,16 @@ def main():
     print("  Ctrl-C to quit.")
     print("=" * 60)
 
+    emit("status", state="standby")
     speak("Allen is online. Say Hello Allen whenever you're ready.")
 
     conversation: list = []
 
     while True:
         try:
+            emit("status", state="standby")
             listen_for_wake_word()
+            emit("status", state="listening")
 
             print("\n✅  Activated — go ahead …")
             speak("Yeah?")
@@ -373,17 +384,23 @@ def main():
 
             if not transcript:
                 speak("I didn't catch that. Say Hello Allen to try again.")
+                emit("status", state="standby")
                 continue
 
             print(f"\n[you]  {transcript}")
+            emit("transcript", role="you", text=transcript)
             conversation.append({"role": "user", "content": transcript})
 
+            emit("status", state="thinking")
             print("[thinking…]")
             reply = think(conversation)
             conversation.append({"role": "assistant", "content": reply})
 
+            emit("transcript", role="allen", text=reply)
+            emit("status", state="speaking")
             print(f"[Allen]  {reply}\n")
             speak(reply)
+            emit("status", state="standby")
 
             # Keep last 20 turns to stay within token limits
             if len(conversation) > 40:
@@ -391,6 +408,7 @@ def main():
 
         except KeyboardInterrupt:
             print("\n")
+            emit("status", state="standby")
             speak("Peace out.")
             break
 

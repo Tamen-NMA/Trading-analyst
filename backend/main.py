@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import asyncio
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,6 +21,9 @@ from fastapi.staticfiles import StaticFiles
 FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 
 app = FastAPI(title="McAllen Trading Analyst")
+
+# ── Voice event broadcast (SSE) ───────────────────────────
+_voice_listeners: list = []
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -487,6 +491,44 @@ async def explain(body: ExplainRequest):
         messages=[{"role": "user", "content": f"Explain this: {text}"}],
     )
     return {"explanation": msg.content[0].text}
+
+
+# ── Voice UI endpoints ────────────────────────────────────
+@app.post("/voice/event")
+async def voice_event(request: Request):
+    """Voice assistant POSTs state/transcript events here."""
+    data = await request.json()
+    for q in _voice_listeners[:]:
+        try:
+            q.put_nowait(data)
+        except asyncio.QueueFull:
+            pass
+    return {"ok": True}
+
+@app.get("/voice/stream")
+async def voice_stream(request: Request):
+    """Browser subscribes here via SSE to receive live voice events."""
+    q: asyncio.Queue = asyncio.Queue(maxsize=60)
+    _voice_listeners.append(q)
+
+    async def gen():
+        try:
+            while True:
+                if await request.is_disconnected():
+                    break
+                try:
+                    event = await asyncio.wait_for(q.get(), timeout=20)
+                    yield f"data: {json.dumps(event)}\n\n"
+                except asyncio.TimeoutError:
+                    yield f"data: {json.dumps({'type': 'ping'})}\n\n"
+        finally:
+            try:
+                _voice_listeners.remove(q)
+            except ValueError:
+                pass
+
+    return StreamingResponse(gen(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 # Serve frontend — must be LAST so API routes take precedence
