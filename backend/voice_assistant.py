@@ -17,6 +17,7 @@ import re
 import queue
 import threading
 import tempfile
+import subprocess
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -246,8 +247,8 @@ def think(conversation: list) -> str:
 
 # ── ElevenLabs TTS ────────────────────────────────────────────────────────────
 def speak(text: str):
-    """Stream audio from ElevenLabs and play it immediately."""
-    clean = re.sub(r"[*#`_~]", "", text)  # strip markdown symbols
+    """Fetch MP3 from ElevenLabs and play via macOS afplay (no format issues)."""
+    clean = re.sub(r"[*#`_~]", "", text)
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}/stream"
     headers = {
         "xi-api-key": ELEVENLABS_API_KEY,
@@ -257,21 +258,22 @@ def speak(text: str):
         "text": clean,
         "model_id": "eleven_turbo_v2_5",
         "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
-        "output_format": "pcm_16000",
+        "output_format": "mp3_44100_128",
     }
     try:
         with httpx.stream("POST", url, headers=headers, json=payload, timeout=30) as r:
             r.raise_for_status()
             audio_bytes = b"".join(r.iter_bytes())
 
-        # Trim to int16 alignment (2 bytes per sample)
-        audio_bytes = audio_bytes[: len(audio_bytes) - (len(audio_bytes) % 2)]
-        audio_np = np.frombuffer(audio_bytes, dtype=np.int16).astype(np.float32) / 32768.0
-        sd.play(audio_np, samplerate=16000)
-        sd.wait()
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
+            f.write(audio_bytes)
+            tmp_path = f.name
+
+        subprocess.run(["afplay", tmp_path], check=True)
+        os.unlink(tmp_path)
     except Exception as e:
-        print(f"[tts] ElevenLabs error: {e}")
-        print(f"[assistant] {clean}")  # fallback: print to terminal
+        print(f"[tts] error: {e}")
+        print(f"[Allen] {clean}")
 
 
 # ── Whisper STT ───────────────────────────────────────────────────────────────
