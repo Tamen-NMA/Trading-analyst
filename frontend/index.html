@@ -504,6 +504,77 @@
   }
   .hi-delete:hover { color: #f85149; }
 
+  /* ── Star / watchlist button ── */
+  .hi-star {
+    background: none;
+    border: none;
+    color: #6e7681;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+    flex-shrink: 0;
+    transition: color 0.15s, transform 0.1s;
+    line-height: 1;
+  }
+  .hi-star:hover { color: #d29922; }
+  .hi-star.starred { color: #d29922; }
+  @media (hover: hover) and (pointer: fine) {
+    .hi-star:active { transform: scale(0.88); }
+  }
+
+  /* ── Watchlist drawer ── */
+  #watchlist-drawer {
+    background: #0d1117;
+    border-left: 1px solid #21262d;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: fixed;
+    right: 0;
+    top: 0;
+    transform: translateX(100%);
+    transition: transform 0.22s ease-out;
+    width: 320px;
+    z-index: 200;
+  }
+  #watchlist-drawer.open { transform: translateX(0); }
+  .watchlist-header {
+    align-items: center;
+    border-bottom: 1px solid #21262d;
+    display: flex;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+  .watchlist-header h3 { color: #e6edf3; flex: 1; font-size: 14px; font-weight: 600; margin: 0; }
+  .watchlist-close { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 18px; line-height: 1; padding: 2px 4px; }
+  .watchlist-close:hover { color: #e6edf3; }
+  .watchlist-list { flex: 1; overflow-y: auto; padding: 12px; }
+  .watchlist-list::-webkit-scrollbar { width: 4px; }
+  .watchlist-list::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
+  .watchlist-empty { color: #6e7681; font-size: 13px; padding: 24px 0; text-align: center; }
+  .wl-item {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    transition: border-color 0.15s;
+  }
+  .wl-item:hover { border-color: #d2992255; }
+  .wl-item-header { align-items: center; display: flex; gap: 8px; margin-bottom: 6px; }
+  .wl-ticker { background: #21262d; border-radius: 4px; color: #e6edf3; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; padding: 3px 7px; }
+  .wl-verdict { border-radius: 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.3px; padding: 2px 7px; }
+  .wl-verdict.BULLISH { background: rgba(63,185,80,0.15); color: #3fb950; }
+  .wl-verdict.BEARISH { background: rgba(248,81,73,0.15);  color: #f85149; }
+  .wl-verdict.NEUTRAL { background: rgba(139,148,158,0.15); color: #8b949e; }
+  .wl-remove { background: none; border: none; color: #6e7681; cursor: pointer; font-size: 13px; margin-left: auto; padding: 0; }
+  .wl-remove:hover { color: #f85149; }
+  .wl-levels { display: grid; font-size: 11px; gap: 3px 10px; grid-template-columns: 1fr 1fr; }
+  .wl-level { color: #8b949e; }
+  .wl-level span { color: #e6edf3; font-weight: 600; }
+  .wl-date { color: #6e7681; font-size: 10px; margin-top: 5px; }
+
   .history-from-badge {
     background: #161b22;
     border: 1px solid #30363d;
@@ -926,6 +997,152 @@
     text-align: center;
     padding: 6px 0;
   }
+
+  /* ══════════════════════════════════════════
+     TABLET VIEW  (769px – 1180px)
+     Desktop header/main and #mob-view are hidden;
+     #tablet-view takes over.
+  ══════════════════════════════════════════ */
+  #tablet-view { display: none; }
+
+  @media (min-width: 769px) and (max-width: 1180px) {
+    body { overflow: auto; height: auto; }
+    header, main, #mob-view { display: none !important; }
+    #tablet-view {
+      display: flex; flex-direction: column; gap: 16px;
+      min-height: 100vh; padding: 20px 28px 40px;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    }
+    #explain-popup { right: 12px; bottom: 24px; left: auto !important; top: auto !important; max-width: calc(100vw - 24px); }
+    /* kp-row colours adapted for gradient tablet background */
+    #tablet-view .kp-row       { background: rgba(255,255,255,0.04) !important; }
+    #tablet-view .kp-row.bull  { background: rgba(63,185,80,0.07) !important; }
+    #tablet-view .kp-row.bear  { background: rgba(248,81,73,0.07) !important; }
+    #tablet-view .kp-row.warn  { background: rgba(210,153,34,0.07) !important; }
+    #tablet-view .kp-row.muted { background: rgba(255,255,255,0.04) !important; }
+    #tablet-view .kp-row.entry { background: rgba(210,153,34,0.07) !important; }
+    #tablet-view .kp-row.exit  { background: rgba(248,81,73,0.07) !important; }
+  }
+
+  /* Header */
+  .tab-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .tab-title { font-size: 24px; font-weight: 800; color: #e6edf3; letter-spacing: -0.5px; }
+  .tab-title span { color: #3fb950; }
+  .tab-subtitle { color: #8b949e; font-size: 12px; margin-top: 4px; }
+  .tab-price-block { text-align: right; flex-shrink: 0; display: none; }
+  .tab-price { font-size: 26px; font-weight: 800; color: #e6edf3; }
+  .tab-change { font-size: 13px; font-weight: 600; margin-top: 2px; }
+
+  /* Search row */
+  .tab-search-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .tab-search-row input {
+    flex: 1; min-width: 200px; max-width: 380px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; color: #e6edf3; font-size: 14px; font-weight: 600; letter-spacing: 1px;
+    outline: none; padding: 10px 14px; text-transform: uppercase;
+  }
+  .tab-search-row input:focus { border-color: #58a6ff; }
+  .tab-search-row input::placeholder { color: #6e7681; font-weight: 400; letter-spacing: 0; text-transform: none; }
+  .tab-analyze-btn {
+    background: linear-gradient(135deg,#238636,#2ea043); border: none; border-radius: 10px;
+    color: #fff; cursor: pointer; font-size: 14px; font-weight: 700; padding: 10px 22px;
+    transition: opacity .2s; white-space: nowrap;
+  }
+  .tab-analyze-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .tab-assistant-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(88,166,255,0.12); border: 1px solid rgba(88,166,255,0.3);
+    border-radius: 10px; color: #58a6ff; cursor: pointer; font-size: 13px; font-weight: 700;
+    padding: 10px 16px; text-decoration: none; white-space: nowrap; transition: background .15s;
+  }
+  .tab-assistant-btn:hover { background: rgba(88,166,255,0.2); }
+  .tab-hint { color: #6e7681; font-size: 11px; }
+
+  /* Body layout */
+  .tab-body { display: flex; gap: 18px; align-items: flex-start; }
+  .tab-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .tab-sidebar { width: 300px; flex-shrink: 0; }
+  .tab-section-title { font-size: 16px; font-weight: 800; color: #e6edf3; margin-bottom: 10px; }
+
+  /* Chart card */
+  .tab-chart-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 14px;
+  }
+  .tab-chart-head {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 13px; font-weight: 700; color: #e6edf3; margin-bottom: 10px;
+  }
+  .tab-chart-type-label {
+    color: #6e7681; font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+  }
+
+  /* Toolbar */
+  .tab-toolbar { display: flex; gap: 8px; margin-bottom: 12px; position: relative; flex-wrap: wrap; }
+  .tab-tool-btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 999px; color: #e6edf3; cursor: pointer; font-size: 13px; font-weight: 700;
+    padding: 9px 16px; transition: background .15s, border-color .15s; user-select: none;
+  }
+  .tab-tool-btn:hover { background: rgba(255,255,255,0.08); }
+  .tab-tool-btn .tool-icon { display: flex; align-items: center; }
+  .tab-tool-btn .caret { font-size: 9px; color: #8b949e; margin-left: 1px; }
+
+  #tab-canvas { width: 100%; height: 360px; display: block; border-radius: 8px; cursor: crosshair; }
+
+  /* Dropdown panels */
+  .tab-dropdown {
+    display: none; position: absolute; top: calc(100% + 8px); left: 0; z-index: 60;
+    background: #0f172a; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55); padding: 8px; min-width: 230px;
+  }
+  .tab-dropdown.open { display: block; }
+
+  /* Chart-type dropdown items */
+  .tab-ctype-item {
+    display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 10px;
+    cursor: pointer; color: #94a3b8; font-size: 14px; font-weight: 600; transition: background .12s, color .12s;
+  }
+  .tab-ctype-item:hover { background: rgba(255,255,255,0.05); }
+  .tab-ctype-item.selected { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+  .tab-ctype-item .tool-icon { width: 18px; display: flex; justify-content: center; }
+
+  /* Time-intervals dropdown */
+  .tab-ti-head { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 10px; }
+  .tab-ti-head span { font-size: 15px; font-weight: 800; color: #f1f5f9; }
+  .tab-ti-close { background: none; border: none; color: #94a3b8; cursor: pointer; font-size: 16px; padding: 2px; line-height: 1; }
+  .tab-ti-close:hover { color: #f1f5f9; }
+  .tab-ti-body { max-height: 300px; overflow-y: auto; padding: 0 4px; }
+  .tab-ti-section { color: #64748b; font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 10px 10px 6px; }
+  .tab-ti-item {
+    display: flex; align-items: center; justify-content: space-between; padding: 9px 12px; border-radius: 8px;
+    cursor: pointer; color: #cbd5e1; font-size: 13.5px; font-weight: 600; transition: background .12s, color .12s;
+  }
+  .tab-ti-item:hover { background: rgba(255,255,255,0.05); }
+  .tab-ti-item.selected { background: rgba(88,166,255,0.12); color: #58a6ff; }
+  .tab-ti-item.disabled { color: #475569; cursor: not-allowed; }
+  .tab-ti-item.disabled:hover { background: none; }
+
+  /* Indicators dropdown */
+  .tab-ind-item {
+    display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 10px;
+    cursor: pointer; color: #cbd5e1; font-size: 13.5px; font-weight: 600; transition: background .12s;
+  }
+  .tab-ind-item:hover { background: rgba(255,255,255,0.05); }
+  .tab-switch {
+    position: relative; width: 34px; height: 19px; background: rgba(255,255,255,0.12);
+    border-radius: 999px; flex-shrink: 0; transition: background .15s;
+  }
+  .tab-switch::after {
+    content: ''; position: absolute; top: 2px; left: 2px; width: 15px; height: 15px;
+    background: #94a3b8; border-radius: 50%; transition: transform .15s, background .15s;
+  }
+  .tab-ind-item.on .tab-switch { background: rgba(63,185,80,0.35); }
+  .tab-ind-item.on .tab-switch::after { transform: translateX(15px); background: #3fb950; }
+
+  /* Stats grid (reuses .mob-stat) */
+  .tab-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 </style>
 </head>
 <body>
@@ -993,6 +1210,18 @@
       <div style="display:flex;align-items:center;gap:8px">
         <span id="analysis-ticker" style="color:#58a6ff"></span>
         <button class="history-btn" id="history-btn" onclick="toggleHistory()">🕐 History</button>
+        <button class="history-btn" id="watchlist-btn" onclick="toggleWatchlist()" style="border-color:#d2992255;color:#d29922;">⭐ Watchlist</button>
+      </div>
+    </div>
+
+    <!-- Watchlist drawer -->
+    <div id="watchlist-drawer">
+      <div class="watchlist-header">
+        <h3>⭐ Watchlist</h3>
+        <button class="watchlist-close" onclick="toggleWatchlist()">✕</button>
+      </div>
+      <div class="watchlist-list" id="watchlist-list">
+        <div class="watchlist-empty">No tickers on watchlist yet.<br>Star an analysis from History to add one.</div>
       </div>
     </div>
 
@@ -1175,6 +1404,168 @@
   </div>
 
   <button id="mob-explain-fab" onclick="triggerExplain()">💡 Explain</button>
+</div>
+
+<!-- ══ TABLET VIEW (769px – 1180px) ══ -->
+<div id="tablet-view">
+
+  <div class="tab-header">
+    <div>
+      <h1 class="tab-title">McAllen <span>Analyst</span></h1>
+      <div class="tab-subtitle" id="tab-subtitle">Enter a ticker to begin</div>
+    </div>
+    <div class="tab-price-block" id="tab-price-block">
+      <div class="tab-price" id="tab-price">$0.00</div>
+      <div class="tab-change" id="tab-change"></div>
+    </div>
+  </div>
+
+  <div class="tab-search-row">
+    <input id="tab-ticker" type="text" placeholder="Search ticker (e.g., AAPL, MSFT)…" maxlength="10"
+           oninput="this.value=this.value.toUpperCase()"
+           onkeydown="if(event.key==='Enter') runTabletAnalysis()" />
+    <button class="tab-analyze-btn" id="tab-analyze-btn" onclick="runTabletAnalysis()">Analyze</button>
+    <a class="tab-assistant-btn" href="/voice.html">🤖 Assistant</a>
+  </div>
+  <p class="tab-hint">~$1 per analysis · check history first</p>
+
+  <div class="tab-body">
+    <div class="tab-main">
+
+      <!-- Chart card -->
+      <div class="tab-chart-card">
+        <div class="tab-chart-head">
+          <span>1D Chart</span>
+          <span class="tab-chart-type-label" id="tab-chart-type-label">Candlestick</span>
+        </div>
+
+        <div class="tab-toolbar">
+          <!-- Time interval -->
+          <div class="tab-tool-btn" onclick="toggleTabletMenu('interval', event)">
+            <span id="tab-interval-label">1 Day</span><span class="caret">▾</span>
+          </div>
+          <!-- Chart type -->
+          <div class="tab-tool-btn" onclick="toggleTabletMenu('ctype', event)">
+            <span class="tool-icon" id="tab-ctype-icon"></span>
+            <span id="tab-ctype-label">Candles</span><span class="caret">▾</span>
+          </div>
+          <!-- Indicators -->
+          <div class="tab-tool-btn" onclick="toggleTabletMenu('indicators', event)">
+            <span class="tool-icon">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="9" width="3" height="6" rx="0.5"/><rect x="6.5" y="5" width="3" height="10" rx="0.5"/><rect x="12" y="1" width="3" height="14" rx="0.5"/></svg>
+            </span>
+            Indicators
+          </div>
+
+          <!-- Time Intervals dropdown -->
+          <div class="tab-dropdown" id="tab-interval-menu" style="min-width:240px">
+            <div class="tab-ti-head">
+              <span>Time Intervals</span>
+              <button class="tab-ti-close" onclick="closeTabletMenus()">✕</button>
+            </div>
+            <div class="tab-ti-body">
+              <div class="tab-ti-section">Minutes</div>
+              <div class="tab-ti-item disabled">1m</div>
+              <div class="tab-ti-item disabled">3m</div>
+              <div class="tab-ti-item disabled">5m</div>
+              <div class="tab-ti-item disabled">15m</div>
+              <div class="tab-ti-item disabled">30m</div>
+              <div class="tab-ti-item disabled">45m</div>
+              <div class="tab-ti-section">Hours</div>
+              <div class="tab-ti-item disabled">1h</div>
+              <div class="tab-ti-item disabled">2h</div>
+              <div class="tab-ti-item disabled">3h</div>
+              <div class="tab-ti-item disabled">4h</div>
+              <div class="tab-ti-section">Days</div>
+              <div class="tab-ti-item selected" data-interval="1D" onclick="setTabletInterval('1D','1 Day')">1 Day</div>
+              <div class="tab-ti-section">Weeks</div>
+              <div class="tab-ti-item" data-interval="1W" onclick="setTabletInterval('1W','1 Week')">1 Week</div>
+              <div class="tab-ti-section">Months</div>
+              <div class="tab-ti-item" data-interval="1M" onclick="setTabletInterval('1M','1 Month')">1 Month</div>
+            </div>
+          </div>
+
+          <!-- Chart type dropdown -->
+          <div class="tab-dropdown" id="tab-ctype-menu">
+            <div class="tab-ctype-item" data-type="bars" onclick="setTabletChartType('bars')">
+              <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><line x1="4" y1="2" x2="4" y2="14"/><line x1="4" y1="4" x2="1" y2="4"/><line x1="4" y1="10" x2="7" y2="10"/><line x1="11" y1="2" x2="11" y2="14"/><line x1="11" y1="6" x2="8" y2="6"/><line x1="11" y1="11" x2="14" y2="11"/></svg></span>
+              <span>Bars</span>
+            </div>
+            <div class="tab-ctype-item selected" data-type="candles" onclick="setTabletChartType('candles')">
+              <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16"><line x1="4.5" y1="1" x2="4.5" y2="14" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="3" height="6" rx="0.5" fill="currentColor"/><line x1="11.5" y1="2" x2="11.5" y2="15" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="3" width="3" height="7" rx="0.5" fill="currentColor"/></svg></span>
+              <span>Candles</span>
+            </div>
+            <div class="tab-ctype-item" data-type="hollow" onclick="setTabletChartType('hollow')">
+              <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16"><line x1="4.5" y1="1" x2="4.5" y2="14" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="3" height="6" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="11.5" y1="2" x2="11.5" y2="15" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="3" width="3" height="7" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>
+              <span>Hollow candles</span>
+            </div>
+            <div class="tab-ctype-item" data-type="line" onclick="setTabletChartType('line')">
+              <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,11 5,6 8,9 15,2"/></svg></span>
+              <span>Line</span>
+            </div>
+          </div>
+
+          <!-- Indicators dropdown -->
+          <div class="tab-dropdown" id="tab-indicators-menu">
+            <div class="tab-ind-item on" data-ind="volume" onclick="toggleTabletIndicator('volume')">
+              <span>Volume</span><span class="tab-switch"></span>
+            </div>
+            <div class="tab-ind-item" data-ind="ma50" onclick="toggleTabletIndicator('ma50')">
+              <span>MA (50)</span><span class="tab-switch"></span>
+            </div>
+            <div class="tab-ind-item" data-ind="ma200" onclick="toggleTabletIndicator('ma200')">
+              <span>MA (200)</span><span class="tab-switch"></span>
+            </div>
+          </div>
+        </div>
+
+        <canvas id="tab-canvas"></canvas>
+      </div>
+
+      <!-- Stats grid -->
+      <div class="mob-stats-grid tab-stats-grid">
+        <div class="mob-stat"><div class="mob-stat-label">Day High</div><div class="mob-stat-value" id="tab-s-dayhigh">—</div></div>
+        <div class="mob-stat"><div class="mob-stat-label">Day Low</div><div class="mob-stat-value" id="tab-s-daylow">—</div></div>
+        <div class="mob-stat"><div class="mob-stat-label">52W High</div><div class="mob-stat-value" id="tab-s-52h">—</div></div>
+        <div class="mob-stat"><div class="mob-stat-label">52W Low</div><div class="mob-stat-value" id="tab-s-52l">—</div></div>
+        <div class="mob-stat"><div class="mob-stat-label">vs MA200</div><div class="mob-stat-value" id="tab-s-ma200">—</div></div>
+        <div class="mob-stat"><div class="mob-stat-label">vs MA50</div><div class="mob-stat-value" id="tab-s-ma50">—</div></div>
+      </div>
+
+      <!-- Analysis -->
+      <div>
+        <div class="tab-section-title">Analysis</div>
+
+        <div class="mob-a-placeholder" id="tab-a-placeholder">
+          <div class="pi">🔍</div>
+          <p>Enter a ticker above to run analysis</p>
+        </div>
+
+        <div id="tab-streaming-view" style="display:none">
+          <div class="mob-stream-header">
+            <div class="spinner active"></div>
+            <span>Searching web &amp; analyzing…</span>
+          </div>
+          <div id="tab-streaming-text" class="mob-analysis-md"></div>
+        </div>
+
+        <div id="tab-summary-view" style="display:none">
+          <div class="mob-verdict-row" id="tab-verdict-row" style="display:none">
+            <div class="verdict-badge" id="tab-verdict-badge"></div>
+          </div>
+          <div id="tab-cards"></div>
+        </div>
+
+        <div class="mob-error-box" id="tab-error-box" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- Recent Searches sidebar -->
+    <div class="tab-sidebar">
+      <div class="tab-section-title">Recent Searches</div>
+      <div id="tab-history-list"><div class="mob-empty">No saved analyses yet.</div></div>
+    </div>
+  </div>
 </div>
 
 <!-- Explain context menu -->
@@ -1382,6 +1773,9 @@ function showAnalysisError(msg) {
   const me = document.getElementById("mob-error-box");
   me.textContent = msg;
   me.style.display = "block";
+  // Tablet
+  document.getElementById("tab-analyze-btn").disabled = false;
+  showTabletAnalysisError(msg);
 }
 
 // ── Main analysis ──
@@ -1431,6 +1825,11 @@ async function runAnalysis() {
       updateMobStats(msg.data);
       mobPriceData = msg.data.last_30_candles;
       renderMobCanvas();
+      // Tablet
+      currentPriceMeta = msg.data;
+      tabletPriceData = msg.data.last_30_candles;
+      updateTabletStats(msg.data);
+      renderTabletCanvas();
       return;
     }
 
@@ -1444,6 +1843,9 @@ async function runAnalysis() {
       // Mobile: update streaming text progressively
       const mobText = document.getElementById("mob-streaming-text");
       if (mobText) { mobText.innerHTML = marked.parse(rawText); mobText.scrollTop = mobText.scrollHeight; }
+      // Tablet: update streaming text progressively
+      const tabText = document.getElementById("tab-streaming-text");
+      if (tabText) { tabText.innerHTML = marked.parse(rawText); tabText.scrollTop = tabText.scrollHeight; }
       return;
     }
 
@@ -1460,6 +1862,10 @@ async function runAnalysis() {
       document.getElementById("mob-spinner").classList.remove("active");
       document.getElementById("mob-status-text").textContent = "";
       showMobAnalysisDone(rawText);
+      // Tablet
+      document.getElementById("tab-analyze-btn").disabled = false;
+      showTabletAnalysisDone(rawText);
+      loadTabletHistory();
       return;
     }
 
@@ -1494,6 +1900,102 @@ async function toggleHistory() {
 }
 
 let historyCache = [];
+let watchlistCache = [];       // full watchlist objects
+let watchlistIds = new Set();  // analysis_id set for fast star lookup
+
+// ── Watchlist ─────────────────────────────────────────────────────────────────
+function toggleWatchlist() {
+  const drawer = document.getElementById("watchlist-drawer");
+  const btn    = document.getElementById("watchlist-btn");
+  const isOpen = drawer.classList.contains("open");
+  // Close history if open
+  document.getElementById("history-drawer").classList.remove("open");
+  document.getElementById("history-btn").classList.remove("active");
+  if (isOpen) {
+    drawer.classList.remove("open");
+    btn.classList.remove("active");
+  } else {
+    drawer.classList.add("open");
+    btn.classList.add("active");
+    loadWatchlist();
+  }
+}
+
+async function loadWatchlist() {
+  const list = document.getElementById("watchlist-list");
+  try {
+    const res  = await fetch(`${API_BASE}/watchlist`);
+    const items = await res.json();
+    watchlistCache = items;
+    watchlistIds   = new Set(items.map(i => i.analysis_id).filter(Boolean));
+    renderWatchlist(items);
+  } catch (e) {
+    list.innerHTML = `<div class="watchlist-empty">Error loading watchlist.</div>`;
+  }
+}
+
+function renderWatchlist(items) {
+  const list = document.getElementById("watchlist-list");
+  if (!items.length) {
+    list.innerHTML = `<div class="watchlist-empty">No tickers on watchlist yet.<br>Star an analysis from History to add one.</div>`;
+    return;
+  }
+  list.innerHTML = items.map(item => {
+    const vc = item.verdict || 'NEUTRAL';
+    const date = (item.created_at || '').slice(0, 10);
+    return `<div class="wl-item">
+      <div class="wl-item-header">
+        <span class="wl-ticker">${item.ticker}</span>
+        <span class="wl-verdict ${vc}">${vc}</span>
+        <button class="wl-remove" title="Remove" onclick="removeFromWatchlist(event, ${item.id})">🗑</button>
+      </div>
+      <div class="wl-levels">
+        <div class="wl-level">Entry <span>${item.entry_price ? '$' + item.entry_price : '—'}</span></div>
+        <div class="wl-level">Stop <span>${item.stop_loss ? '$' + item.stop_loss : '—'}</span></div>
+        <div class="wl-level">Target <span>${item.target ? '$' + item.target : '—'}</span></div>
+        <div class="wl-level">R/R <span>${item.rr_ratio || '—'}</span></div>
+      </div>
+      <div class="wl-date">Added ${date}</div>
+    </div>`;
+  }).join("");
+}
+
+async function toggleStar(event, analysisId, ticker) {
+  event.stopPropagation();
+  const btn = event.currentTarget;
+  if (watchlistIds.has(analysisId)) {
+    // Already starred — find and remove
+    const wlItem = watchlistCache.find(i => i.analysis_id === analysisId);
+    if (wlItem) await removeFromWatchlist(null, wlItem.id, btn);
+  } else {
+    // Add to watchlist
+    btn.textContent = "★";
+    btn.style.opacity = "0.5";
+    try {
+      const res = await fetch(`${API_BASE}/watchlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticker, analysis_id: analysisId }),
+      });
+      if (res.ok) {
+        btn.classList.add("starred");
+        watchlistIds.add(analysisId);
+        await loadWatchlist(); // refresh cache
+      }
+    } catch (e) { console.error(e); }
+    btn.style.opacity = "";
+  }
+}
+
+async function removeFromWatchlist(event, watchlistId, starBtn = null) {
+  if (event) event.stopPropagation();
+  try {
+    await fetch(`${API_BASE}/watchlist/${watchlistId}`, { method: "DELETE" });
+    await loadWatchlist();
+    // Un-star the button in history list if visible
+    renderHistoryItems(historyCache);
+  } catch (e) { console.error(e); }
+}
 
 function filterHistory(query) {
   const q = query.trim().toUpperCase();
@@ -1526,6 +2028,7 @@ function renderHistoryItems(items, query = "") {
         <div class="hi-price">${price}</div>
       </div>
       <div class="hi-verdict ${verdictCls}">${item.verdict || '—'}</div>
+      <button class="hi-star ${watchlistIds.has(item.id) ? 'starred' : ''}" title="Add to watchlist" onclick="toggleStar(event, ${item.id}, '${item.ticker}')">★</button>
       <button class="hi-delete" title="Delete" onclick="deleteHistory(event, ${item.id})">🗑</button>
     </div>`;
   }).join("");
@@ -1534,9 +2037,15 @@ function renderHistoryItems(items, query = "") {
 async function loadHistory() {
   const list = document.getElementById("history-list");
   try {
-    const res = await fetch(`${API_BASE}/history`);
-    const items = await res.json();
-    historyCache = items;
+    const [histRes, wlRes] = await Promise.all([
+      fetch(`${API_BASE}/history`),
+      fetch(`${API_BASE}/watchlist`),
+    ]);
+    const items = await histRes.json();
+    const wl    = await wlRes.json();
+    historyCache  = items;
+    watchlistCache = wl;
+    watchlistIds   = new Set(wl.map(i => i.analysis_id).filter(Boolean));
     renderHistoryItems(items);
   } catch (e) {
     list.innerHTML = `<div class="history-empty">Error loading history.</div>`;
@@ -2274,7 +2783,386 @@ function _roundRect(ctx, x, y, w, h, r) {
   });
 })();
 
-window.addEventListener("resize", () => { if (window.innerWidth <= 768) renderMobCanvas(); });
+window.addEventListener("resize", () => {
+  if (window.innerWidth <= 768) renderMobCanvas();
+  else if (window.innerWidth <= 1180) renderTabletCanvas();
+});
+
+// ══════════════════════════════════════════
+// TABLET VIEW (769px – 1180px)
+// ══════════════════════════════════════════
+let tabletPriceData = null;
+let tabletChartType = "candles";
+let tabletInterval  = "1D";
+let tabletHoverIdx  = null;
+let tabletIndicators = { volume: true, ma50: false, ma200: false };
+
+const TAB_CTYPE_ICONS = {
+  bars:    '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><line x1="4" y1="2" x2="4" y2="14"/><line x1="4" y1="4" x2="1" y2="4"/><line x1="4" y1="10" x2="7" y2="10"/><line x1="11" y1="2" x2="11" y2="14"/><line x1="11" y1="6" x2="8" y2="6"/><line x1="11" y1="11" x2="14" y2="11"/></svg>',
+  candles: '<svg width="14" height="14" viewBox="0 0 16 16"><line x1="4.5" y1="1" x2="4.5" y2="14" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="3" height="6" rx="0.5" fill="currentColor"/><line x1="11.5" y1="2" x2="11.5" y2="15" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="3" width="3" height="7" rx="0.5" fill="currentColor"/></svg>',
+  hollow:  '<svg width="14" height="14" viewBox="0 0 16 16"><line x1="4.5" y1="1" x2="4.5" y2="14" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="3" height="6" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="11.5" y1="2" x2="11.5" y2="15" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="3" width="3" height="7" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>',
+  line:    '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,11 5,6 8,9 15,2"/></svg>',
+};
+const TAB_CTYPE_LABELS = { bars: "Bars", candles: "Candles", hollow: "Hollow candles", line: "Line" };
+const TAB_CTYPE_HEAD   = { bars: "Bar", candles: "Candlestick", hollow: "Hollow Candlestick", line: "Line" };
+
+document.getElementById("tab-ctype-icon").innerHTML = TAB_CTYPE_ICONS[tabletChartType];
+
+// ── Dropdown menus ──
+function toggleTabletMenu(name, e) {
+  if (e) e.stopPropagation();
+  const menus = { interval: "tab-interval-menu", ctype: "tab-ctype-menu", indicators: "tab-indicators-menu" };
+  Object.entries(menus).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if (key === name) el.classList.toggle("open");
+    else el.classList.remove("open");
+  });
+}
+function closeTabletMenus() {
+  ["tab-interval-menu", "tab-ctype-menu", "tab-indicators-menu"].forEach(id => document.getElementById(id).classList.remove("open"));
+}
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".tab-toolbar")) closeTabletMenus();
+});
+
+// ── Chart type ──
+function setTabletChartType(type) {
+  tabletChartType = type;
+  document.querySelectorAll(".tab-ctype-item").forEach(el => el.classList.toggle("selected", el.dataset.type === type));
+  document.getElementById("tab-ctype-icon").innerHTML = TAB_CTYPE_ICONS[type];
+  document.getElementById("tab-ctype-label").textContent = TAB_CTYPE_LABELS[type];
+  document.getElementById("tab-chart-type-label").textContent = TAB_CTYPE_HEAD[type];
+  closeTabletMenus();
+  renderTabletCanvas();
+}
+
+// ── Time interval ──
+function aggregateCandles(data, groupSize) {
+  const out = [];
+  for (let i = 0; i < data.length; i += groupSize) {
+    const chunk = data.slice(i, i + groupSize);
+    if (!chunk.length) continue;
+    out.push({
+      date: chunk[0].date,
+      open: chunk[0].open,
+      high: Math.max(...chunk.map(c => c.high)),
+      low: Math.min(...chunk.map(c => c.low)),
+      close: chunk[chunk.length - 1].close,
+      volume: chunk.reduce((s, c) => s + c.volume, 0),
+    });
+  }
+  return out;
+}
+function getTabletData() {
+  if (!tabletPriceData) return null;
+  if (tabletInterval === "1W") return aggregateCandles(tabletPriceData, 5);
+  if (tabletInterval === "1M") return aggregateCandles(tabletPriceData, 21);
+  return tabletPriceData;
+}
+function setTabletInterval(value, label) {
+  tabletInterval = value;
+  document.querySelectorAll(".tab-ti-item[data-interval]").forEach(el => el.classList.toggle("selected", el.dataset.interval === value));
+  document.getElementById("tab-interval-label").textContent = label;
+  closeTabletMenus();
+  renderTabletCanvas();
+}
+
+// ── Indicators ──
+function toggleTabletIndicator(name) {
+  tabletIndicators[name] = !tabletIndicators[name];
+  document.querySelector(`.tab-ind-item[data-ind="${name}"]`).classList.toggle("on", tabletIndicators[name]);
+  renderTabletCanvas();
+}
+
+// ── Canvas render ──
+function renderTabletCanvas() {
+  const canvas = document.getElementById("tab-canvas");
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth;
+  const H = canvas.offsetHeight;
+  if (!W || !H) return;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  const data = getTabletData();
+  if (!data || !data.length) {
+    ctx.fillStyle = "#6e7681";
+    ctx.font = "13px -apple-system,sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("Enter a ticker above to load the chart", W / 2, H / 2);
+    return;
+  }
+
+  const n = data.length;
+  const showVol = tabletIndicators.volume;
+  const PAD_T = 14, PAD_R = 56, PAD_B = 28, PAD_L = 8;
+  const VOL_H = showVol ? 44 : 0;
+  const CHART_H = H - PAD_T - PAD_B;
+  const PRICE_H = CHART_H - VOL_H - (showVol ? 8 : 0);
+
+  const maxP = Math.max(...data.map(d => d.high));
+  const minP = Math.min(...data.map(d => d.low));
+  const padP = (maxP - minP) * 0.06 || 1;
+  const pMax = maxP + padP, pMin = minP - padP, pRange = pMax - pMin;
+  const maxVol = Math.max(...data.map(d => d.volume), 1);
+
+  const xOf  = i => PAD_L + (i + 0.5) * (W - PAD_L - PAD_R) / n;
+  const pY   = p => PAD_T + PRICE_H * (1 - (p - pMin) / pRange);
+  const barW = Math.max(2, (W - PAD_L - PAD_R) / n * 0.7);
+
+  // Grid + price labels
+  ctx.font = "10.5px -apple-system,sans-serif";
+  for (let i = 0; i <= 4; i++) {
+    const p = pMin + pRange * i / 4;
+    const y = pY(p);
+    ctx.strokeStyle = "rgba(255,255,255,0.06)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    ctx.fillStyle = "#6e7681"; ctx.textAlign = "left";
+    ctx.fillText("$" + p.toFixed(2), W - PAD_R + 6, y + 4);
+  }
+
+  // Volume bars
+  if (showVol) {
+    data.forEach((d, i) => {
+      ctx.fillStyle = d.close >= d.open ? "rgba(63,185,80,0.35)" : "rgba(248,81,73,0.35)";
+      const bh = (1 - d.volume / maxVol) * VOL_H;
+      ctx.fillRect(xOf(i) - barW * 0.4, H - PAD_B + 8 + bh, barW * 0.8, VOL_H - bh);
+    });
+  }
+
+  // Price chart
+  if (tabletChartType === "line") {
+    ctx.beginPath(); ctx.strokeStyle = "#3fb950"; ctx.lineWidth = 1.8; ctx.lineJoin = "round";
+    data.forEach((d, i) => { const x = xOf(i), y = pY(d.close); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.stroke();
+    ctx.beginPath();
+    data.forEach((d, i) => { const x = xOf(i), y = pY(d.close); i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+    ctx.lineTo(xOf(n - 1), pY(pMin)); ctx.lineTo(xOf(0), pY(pMin)); ctx.closePath();
+    const g = ctx.createLinearGradient(0, PAD_T, 0, PAD_T + PRICE_H);
+    g.addColorStop(0, "rgba(63,185,80,0.22)"); g.addColorStop(1, "rgba(63,185,80,0)");
+    ctx.fillStyle = g; ctx.fill();
+
+  } else if (tabletChartType === "bars") {
+    data.forEach((d, i) => {
+      const x = xOf(i); const col = d.close >= d.open ? "#3fb950" : "#f85149";
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x, pY(d.high)); ctx.lineTo(x, pY(d.low)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - barW / 2, pY(d.open)); ctx.lineTo(x, pY(d.open)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, pY(d.close)); ctx.lineTo(x + barW / 2, pY(d.close)); ctx.stroke();
+    });
+
+  } else {
+    const hollow = tabletChartType === "hollow";
+    data.forEach((d, i) => {
+      const isUp = d.close >= d.open;
+      const col  = isUp ? "#3fb950" : "#f85149";
+      const x = xOf(i);
+      const bodyTop = pY(Math.max(d.open, d.close));
+      const bodyH   = Math.max(1, Math.abs(pY(d.open) - pY(d.close)));
+      ctx.strokeStyle = col; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(x, pY(d.high)); ctx.lineTo(x, bodyTop);
+      ctx.moveTo(x, bodyTop + bodyH); ctx.lineTo(x, pY(d.low));
+      ctx.stroke();
+      if (hollow && isUp) {
+        ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+        ctx.strokeRect(x - barW / 2, bodyTop, barW, bodyH);
+      } else {
+        ctx.fillStyle = col; ctx.fillRect(x - barW / 2, bodyTop, barW, bodyH);
+      }
+    });
+  }
+
+  // Moving-average overlay lines
+  function drawMaLine(price, color, label) {
+    if (!price || price < pMin || price > pMax) return;
+    const y = pY(price);
+    ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = color; ctx.font = "10px -apple-system,sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(label, PAD_L + 4, y - 3);
+  }
+  if (tabletIndicators.ma50  && currentPriceMeta?.ma50)  drawMaLine(currentPriceMeta.ma50,  "#d29922", "MA50");
+  if (tabletIndicators.ma200 && currentPriceMeta?.ma200) drawMaLine(currentPriceMeta.ma200, "#58a6ff", "MA200");
+
+  // Date labels
+  ctx.fillStyle = "#6e7681"; ctx.font = "10px -apple-system,sans-serif"; ctx.textAlign = "center";
+  const step = Math.max(1, Math.ceil(n / 8));
+  for (let i = 0; i < n; i += step) {
+    ctx.fillText(data[i].date.slice(5).replace("-", "/"), xOf(i), H - PAD_B + (showVol ? VOL_H + 18 : 16));
+  }
+
+  // Hover crosshair + OHLC tooltip
+  if (tabletHoverIdx !== null && tabletHoverIdx < n) {
+    const d = data[tabletHoverIdx], x = xOf(tabletHoverIdx);
+    ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(x, PAD_T); ctx.lineTo(x, H - PAD_B); ctx.stroke();
+    ctx.setLineDash([]);
+    const TW = 150, TH = 70;
+    let tx = x + 10; if (tx + TW > W - PAD_R) tx = x - TW - 10;
+    const ty = PAD_T + 4;
+    ctx.fillStyle = "rgba(15,23,42,0.95)"; ctx.strokeStyle = "rgba(88,166,255,0.4)"; ctx.lineWidth = 1;
+    _roundRect(ctx, tx, ty, TW, TH, 8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#8b949e"; ctx.font = "10px -apple-system,sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(d.date, tx + 8, ty + 16);
+    ctx.fillStyle = "#e6edf3"; ctx.font = "11px -apple-system,sans-serif";
+    ctx.fillText(`O: ${d.open}   H: ${d.high}`, tx + 8, ty + 34);
+    ctx.fillText(`L: ${d.low}   C: ${d.close}`, tx + 8, ty + 50);
+  }
+}
+
+// Mouse hover crosshair
+(function() {
+  function getTabletIdx(e) {
+    const data = getTabletData();
+    if (!data) return null;
+    const canvas = document.getElementById("tab-canvas");
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const n = data.length;
+    const PAD_L = 8, PAD_R = 56;
+    return Math.max(0, Math.min(n - 1, Math.round((x - PAD_L) / (rect.width - PAD_L - PAD_R) * n - 0.5)));
+  }
+  document.addEventListener("mousemove", e => {
+    if (e.target.id === "tab-canvas") { tabletHoverIdx = getTabletIdx(e); renderTabletCanvas(); }
+  });
+  document.addEventListener("mouseleave", e => {
+    if (e.target.id === "tab-canvas" && tabletHoverIdx !== null) { tabletHoverIdx = null; renderTabletCanvas(); }
+  }, true);
+})();
+
+// ── Stats ──
+function updateTabletStats(data) {
+  const last = data.last_30_candles[data.last_30_candles.length - 1];
+  document.getElementById("tab-s-dayhigh").textContent = `$${last.high}`;
+  document.getElementById("tab-s-daylow").textContent  = `$${last.low}`;
+  document.getElementById("tab-s-52h").textContent = `$${data["52w_high"]}`;
+  document.getElementById("tab-s-52l").textContent = `$${data["52w_low"]}`;
+
+  const ma200 = document.getElementById("tab-s-ma200");
+  ma200.textContent = data.price_vs_ma200 === "above" ? "▲ Above" : "▼ Below";
+  ma200.className   = "mob-stat-value " + (data.price_vs_ma200 === "above" ? "bullish" : "bearish");
+
+  const ma50 = document.getElementById("tab-s-ma50");
+  ma50.textContent = data.price_vs_ma50 === "above" ? "▲ Above" : "▼ Below";
+  ma50.className   = "mob-stat-value " + (data.price_vs_ma50 === "above" ? "bullish" : "bearish");
+
+  document.getElementById("tab-price-block").style.display = "block";
+  document.getElementById("tab-price").textContent = `$${data.current_price}`;
+  const chg = data.daily_change_pct;
+  const chgEl = document.getElementById("tab-change");
+  chgEl.textContent = `${chg >= 0 ? "+" : ""}$${Math.abs((data.current_price * chg / 100)).toFixed(2)} (${chg >= 0 ? "+" : ""}${chg}%)`;
+  chgEl.className = "tab-change " + (chg >= 0 ? "mob-pos" : "mob-neg");
+}
+
+// ── Price fetch (initial / history) ──
+async function fetchTabletPrice(ticker) {
+  try {
+    const res = await fetch(`${API_BASE}/price/${ticker}`);
+    const data = await res.json();
+    currentPriceMeta = data;
+    tabletPriceData = data.last_30_candles;
+    document.getElementById("tab-subtitle").textContent = ticker;
+    updateTabletStats(data);
+    renderTabletCanvas();
+  } catch (e) { console.warn("tablet price fetch", e); }
+}
+
+// ── Analysis ──
+function showTabletAnalysisDone(text) {
+  document.getElementById("tab-a-placeholder").style.display = "none";
+  document.getElementById("tab-streaming-view").style.display = "none";
+  document.getElementById("tab-summary-view").style.display = "block";
+  const v = extractVerdict(text);
+  if (v) {
+    const vb = document.getElementById("tab-verdict-badge");
+    vb.textContent = `${v.emoji} ${v.verdict}`;
+    vb.className = `verdict-badge verdict-${v.cls}`;
+    document.getElementById("tab-verdict-row").style.display = "block";
+  }
+  document.getElementById("tab-cards").innerHTML = buildMobCards(text);
+}
+
+function showTabletAnalysisError(msg) {
+  document.getElementById("tab-a-placeholder").style.display = "none";
+  document.getElementById("tab-streaming-view").style.display = "none";
+  document.getElementById("tab-summary-view").style.display = "none";
+  const eb = document.getElementById("tab-error-box");
+  eb.textContent = msg;
+  eb.style.display = "block";
+}
+
+function runTabletAnalysis() {
+  const ticker = document.getElementById("tab-ticker").value.trim().toUpperCase();
+  if (!ticker) return;
+  document.getElementById("ticker-input").value = ticker;
+  document.getElementById("tab-subtitle").textContent = ticker;
+  document.getElementById("tab-a-placeholder").style.display = "none";
+  document.getElementById("tab-streaming-view").style.display = "block";
+  document.getElementById("tab-streaming-text").innerHTML = "";
+  document.getElementById("tab-summary-view").style.display = "none";
+  document.getElementById("tab-cards").innerHTML = "";
+  document.getElementById("tab-verdict-row").style.display = "none";
+  document.getElementById("tab-error-box").style.display = "none";
+  document.getElementById("tab-analyze-btn").disabled = true;
+  runAnalysis();
+}
+
+// ── Recent Searches sidebar ──
+async function loadTabletHistory() {
+  try {
+    const res = await fetch(`${API_BASE}/history`);
+    renderTabletHistory(await res.json());
+  } catch {
+    document.getElementById("tab-history-list").innerHTML = '<div class="mob-empty">Error loading history.</div>';
+  }
+}
+function renderTabletHistory(items) {
+  const list = document.getElementById("tab-history-list");
+  if (!items.length) { list.innerHTML = '<div class="mob-empty">No saved analyses yet.</div>'; return; }
+  list.innerHTML = items.map(item => {
+    const chg = item.daily_change;
+    const pos = chg === null || chg >= 0;
+    const pct = chg !== null ? `${pos ? "+" : ""}${chg.toFixed(2)}%` : "—";
+    const usd = item.price && chg !== null ? `${pos ? "+" : ""}$${Math.abs(chg).toFixed(2)}` : "";
+    return `<div class="mob-hitem" onclick="loadTabletFromHistory(${item.id},'${item.ticker}')">
+      <div class="mob-hitem-left">
+        <div class="mob-hitem-ticker">${item.ticker}</div>
+        <div class="mob-hitem-date">${item.searched_at}</div>
+      </div>
+      <div class="mob-hitem-right">
+        <div class="mob-hitem-pct ${pos ? "mob-pos" : "mob-neg"}">${pct}</div>
+        <div class="mob-hitem-chg ${pos ? "mob-pos" : "mob-neg"}">${usd}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+async function loadTabletFromHistory(id, ticker) {
+  try {
+    const res = await fetch(`${API_BASE}/history/${id}`);
+    const data = await res.json();
+    document.getElementById("tab-ticker").value = ticker;
+    document.getElementById("tab-subtitle").textContent = ticker;
+    document.getElementById("tab-streaming-view").style.display = "none";
+    document.getElementById("tab-cards").innerHTML = "";
+    document.getElementById("tab-verdict-row").style.display = "none";
+    document.getElementById("tab-error-box").style.display = "none";
+    showTabletAnalysisDone(data.analysis_text);
+    fetchTabletPrice(ticker);
+  } catch { alert("Failed to load analysis."); }
+}
+
+// Init tablet chart on page load
+if (window.innerWidth > 768 && window.innerWidth <= 1180) {
+  fetchTabletPrice("AAPL");
+  loadTabletHistory();
+}
 
 function formatBig(n) {
   if (!n) return '—';
