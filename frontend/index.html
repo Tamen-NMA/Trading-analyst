@@ -822,17 +822,18 @@
     display:flex; flex-direction:column;
   }
   .mob-chart-controls {
-    display:flex; gap:5px; padding:8px 10px; flex-shrink:0;
+    display:flex; gap:8px; padding:8px 10px; flex-shrink:0;
     border-bottom:1px solid rgba(255,255,255,0.07);
   }
-  .mob-ctype-btn {
-    background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
-    border-radius:6px; color:#8b949e; cursor:pointer; font-size:11px; font-weight:600;
-    padding:5px 10px; transition:all .15s; flex:1; text-align:center;
+  .mob-dd-select {
+    appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    background:rgba(255,255,255,0.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b949e' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:999px; color:#e6edf3; cursor:pointer;
+    font-size:12px; font-weight:600; transition:all .15s;
+    padding:7px 28px 7px 14px; flex:1; text-align:left;
   }
-  .mob-ctype-btn.active {
-    background:rgba(63,185,80,0.15); border-color:rgba(63,185,80,0.4); color:#3fb950;
-  }
+  .mob-dd-select:focus { outline:none; border-color:rgba(63,185,80,0.4); }
   #mob-canvas { flex:1; width:100%; display:block; min-height:0; }
 
   /* Stats grid */
@@ -1200,13 +1201,15 @@
   }
 
   /* ══════════════════════════════════════════
-     TABLET VIEW  (769px – 1180px)
+     TABLET VIEW  (769px – 1180px, or up to 1400px on
+     touch devices — covers iPad Pro in landscape)
      Desktop header/main and #mob-view are hidden;
      #tablet-view takes over.
   ══════════════════════════════════════════ */
   #tablet-view { display: none; }
 
-  @media (min-width: 769px) and (max-width: 1180px) {
+  @media (min-width: 769px) and (max-width: 1180px),
+         (min-width: 769px) and (max-width: 1400px) and (pointer: coarse) {
     body { overflow: auto; height: auto; }
     header, main, #mob-view { display: none !important; }
     #tablet-view {
@@ -1556,10 +1559,37 @@
   <div class="mob-tab-content" id="mob-chart-tab">
     <div class="mob-chart-box">
       <div class="mob-chart-controls">
-        <button class="mob-ctype-btn active" onclick="setMobChartType('candles')">Candles</button>
-        <button class="mob-ctype-btn"        onclick="setMobChartType('hollow')">Hollow</button>
-        <button class="mob-ctype-btn"        onclick="setMobChartType('bars')">Bars</button>
-        <button class="mob-ctype-btn"        onclick="setMobChartType('line')">Line</button>
+        <select class="mob-dd-select" id="mob-interval-select" onchange="setMobInterval(this.value)">
+          <optgroup label="Minutes">
+            <option value="1m" disabled>1m</option>
+            <option value="3m" disabled>3m</option>
+            <option value="5m" disabled>5m</option>
+            <option value="15m" disabled>15m</option>
+            <option value="30m" disabled>30m</option>
+            <option value="45m" disabled>45m</option>
+          </optgroup>
+          <optgroup label="Hours">
+            <option value="1h" disabled>1h</option>
+            <option value="2h" disabled>2h</option>
+            <option value="3h" disabled>3h</option>
+            <option value="4h" disabled>4h</option>
+          </optgroup>
+          <optgroup label="Days">
+            <option value="1D" selected>1 Day</option>
+          </optgroup>
+          <optgroup label="Weeks">
+            <option value="1W">1 Week</option>
+          </optgroup>
+          <optgroup label="Months">
+            <option value="1M">1 Month</option>
+          </optgroup>
+        </select>
+        <select class="mob-dd-select" id="mob-ctype-select" onchange="setMobChartType(this.value)">
+          <option value="candles">Candles</option>
+          <option value="hollow">Hollow Candles</option>
+          <option value="bars">Bars</option>
+          <option value="line">Line</option>
+        </select>
       </div>
       <canvas id="mob-canvas"></canvas>
     </div>
@@ -1596,6 +1626,7 @@
 
     <!-- Summary view: section cards + trade plan rows -->
     <div id="mob-summary-view">
+      <div class="history-from-badge" id="mob-from-badge"></div>
       <div class="mob-verdict-row" id="mob-verdict-row" style="display:none">
         <div class="verdict-badge" id="mob-verdict-badge"></div>
       </div>
@@ -1771,6 +1802,7 @@
         </div>
 
         <div id="tab-summary-view" style="display:none">
+          <div class="history-from-badge" id="tab-from-badge"></div>
           <div class="mob-verdict-row" id="tab-verdict-row" style="display:none">
             <div class="verdict-badge" id="tab-verdict-badge"></div>
           </div>
@@ -1813,6 +1845,35 @@ let tvWidget = null;
 let currentES = null;
 let rawText = "";
 let currentPriceMeta = null;
+
+// ── Persisted "last ticker" ────────────────────────────────
+const LAST_TICKER_KEY = "mcallen_last_ticker";
+function getLastTicker() {
+  return (localStorage.getItem(LAST_TICKER_KEY) || "AAPL").toUpperCase();
+}
+function setLastTicker(ticker) {
+  if (ticker) localStorage.setItem(LAST_TICKER_KEY, ticker.toUpperCase());
+}
+const lastTicker = getLastTicker();
+
+function nowStamp() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// On open, show the most recently saved analysis for `ticker` (so the
+// Analysis tab isn't empty) while the chart/price are fetched live.
+async function loadLastAnalysis(ticker, view) {
+  try {
+    const res = await fetch(`${API_BASE}/history`);
+    const items = await res.json();
+    const item = items.find(i => i.ticker === ticker);
+    if (!item) return;
+    const data = await (await fetch(`${API_BASE}/history/${item.id}`)).json();
+    view(data.analysis_text);
+  } catch { /* no saved analysis yet — leave placeholder */ }
+}
 
 // ── TradingView chart ──
 function loadChart(ticker) {
@@ -2003,6 +2064,7 @@ function showAnalysisError(msg) {
 async function runAnalysis() {
   const ticker = document.getElementById("ticker-input").value.trim().toUpperCase();
   if (!ticker) return;
+  setLastTicker(ticker);
 
   // Cancel existing stream
   if (currentES) { currentES.close(); currentES = null; }
@@ -2275,6 +2337,7 @@ async function loadHistory() {
 
 async function loadFromHistory(id, ticker, searchedAt) {
   try {
+    setLastTicker(ticker);
     const res = await fetch(`${API_BASE}/history/${id}`);
     const data = await res.json();
 
@@ -2306,6 +2369,24 @@ async function loadFromHistory(id, ticker, searchedAt) {
   } catch (e) {
     alert("Failed to load analysis.");
   }
+}
+
+// Default-on-open: show the last saved analysis, flagged with today's date
+// (chart/price are already showing live data).
+function showDesktopAnalysisFromHistory(text) {
+  rawText = text;
+  document.getElementById("placeholder").style.display = "none";
+  document.getElementById("error-box").classList.remove("visible");
+  document.getElementById("analysis-content").className = "analysis-content visible";
+  document.getElementById("analysis-content").innerHTML = marked.parse(text);
+
+  const badge = document.getElementById("history-from-badge");
+  badge.textContent = `📁 Your last analysis · ${nowStamp()}`;
+  badge.classList.add("visible");
+
+  const v = extractVerdict(text);
+  if (v) showVerdict(v);
+  showTakeaways(text);
 }
 
 async function deleteHistory(event, id) {
@@ -2730,7 +2811,15 @@ function _firstPrice(str) {
 // ── Canvas chart ─────────────────────────────────────────
 let mobPriceData = null;
 let mobChartType = "candles";
+let mobInterval  = "1D";
 let mobTouchIdx  = null;
+
+function getMobData() {
+  if (!mobPriceData) return null;
+  if (mobInterval === "1W") return aggregateCandles(mobPriceData, 5);
+  if (mobInterval === "1M") return aggregateCandles(mobPriceData, 21);
+  return mobPriceData;
+}
 
 async function fetchMobPrice(ticker) {
   try {
@@ -2738,18 +2827,20 @@ async function fetchMobPrice(ticker) {
     const data = await res.json();
     currentPriceMeta = data;
     mobPriceData = data.last_30_candles;
+    mobTouchIdx = null;
     updateMobStats(data);
     renderMobCanvas();
-    // Auto-show intel for the most recent candle without requiring a touch
-    if (mobPriceData && mobPriceData.length) updateCandleIntel(mobPriceData.length - 1);
   } catch (e) { console.warn("price fetch", e); }
+}
+
+function setMobInterval(value) {
+  mobInterval = value;
+  mobTouchIdx = null;
+  renderMobCanvas();
 }
 
 function setMobChartType(type) {
   mobChartType = type;
-  document.querySelectorAll(".mob-ctype-btn").forEach((b, i) => {
-    b.classList.toggle("active", ["candles","hollow","bars","line"][i] === type);
-  });
   renderMobCanvas();
 }
 
@@ -2930,8 +3021,9 @@ function analyzeCandleIntel(data, idx) {
 function updateCandleIntel(idx) {
   const panel = document.getElementById('mob-candle-intel');
   if (!panel) return;
-  if (idx===null || !mobPriceData) { panel.style.display='none'; return; }
-  const intel = analyzeCandleIntel(mobPriceData, idx);
+  const data = getMobData();
+  if (idx===null || !data) { panel.style.display='none'; return; }
+  const intel = analyzeCandleIntel(data, idx);
   if (!intel) { panel.style.display='none'; return; }
 
   const sigArrow = intel.signal==='bullish'?'↑':intel.signal==='bearish'?'↓':'↔';
@@ -2944,7 +3036,7 @@ function updateCandleIntel(idx) {
   const volBadge = intel.isHighVol?'<span class="ci-chip" style="background:rgba(88,166,255,.1);color:#58a6ff;border-color:rgba(88,166,255,.3)">⚡ High Vol</span>':'';
 
   // Support / Resistance
-  const sr = detectSR(mobPriceData, currentPriceMeta);
+  const sr = detectSR(data, currentPriceMeta);
   const srHtml = [
     ...sr.resistance.map(r=>`<span class="ci-chip sellers">⚡ Resistance: ${r}</span>`),
     ...sr.support.map(s=>`<span class="ci-chip buyers">🛡️ Support: ${s}</span>`),
@@ -2977,7 +3069,8 @@ function renderMobCanvas() {
   const ctx = canvas.getContext("2d");
   ctx.scale(dpr, dpr);
 
-  if (!mobPriceData || !mobPriceData.length) {
+  const data = getMobData();
+  if (!data || !data.length) {
     ctx.fillStyle = "#6e7681";
     ctx.font = "13px -apple-system,sans-serif";
     ctx.textAlign = "center";
@@ -2985,7 +3078,6 @@ function renderMobCanvas() {
     return;
   }
 
-  const data = mobPriceData;
   const n = data.length;
   const PAD_T = 12, PAD_R = 54, PAD_B = 52, PAD_L = 6;
   const VOL_H = 36;
@@ -3139,29 +3231,51 @@ function _roundRect(ctx, x, y, w, h, r) {
 // Touch crosshair
 (function() {
   function getIdx(e) {
-    if (!mobPriceData) return null;
+    const data = getMobData();
+    if (!data) return null;
     const canvas = document.getElementById("mob-canvas");
     const rect = canvas.getBoundingClientRect();
     const t = e.touches[0];
     const x = t.clientX - rect.left;
-    const n = mobPriceData.length;
+    const n = data.length;
     const PAD_L = 6, PAD_R = 54;
     return Math.max(0, Math.min(n-1, Math.round((x - PAD_L) / (rect.width - PAD_L - PAD_R) * n - 0.5)));
   }
+  let mobLastTapIdx = null, mobLastTapTime = 0;
   document.addEventListener("touchstart", e => {
-    if (e.target.id === "mob-canvas") { mobTouchIdx = getIdx(e); renderMobCanvas(); }
+    if (e.target.id !== "mob-canvas") return;
+    const idx = getIdx(e);
+    const now = Date.now();
+    // Double-tap the same candle to dismiss the selection
+    if (mobTouchIdx === idx && mobLastTapIdx === idx && (now - mobLastTapTime) < 350) {
+      mobTouchIdx = null;
+      mobLastTapIdx = null;
+      mobLastTapTime = 0;
+    } else {
+      mobTouchIdx = idx;
+      mobLastTapIdx = idx;
+      mobLastTapTime = now;
+    }
+    renderMobCanvas();
   }, { passive: true });
   document.addEventListener("touchmove", e => {
     if (e.target.id === "mob-canvas") { mobTouchIdx = getIdx(e); renderMobCanvas(); }
   }, { passive: true });
-  document.addEventListener("touchend", e => {
-    if (e.target.id === "mob-canvas") { setTimeout(() => { mobTouchIdx = null; renderMobCanvas(); updateCandleIntel(null); }, 1800); }
-  });
+  // Selection persists after lifting the finger; touchend needs no handler.
 })();
+
+// Mirrors the tablet-view media query: 769-1180px, or up to 1400px on
+// touch devices (covers iPad Pro in landscape).
+function isTabletViewport() {
+  const w = window.innerWidth;
+  if (w <= 768) return false;
+  if (w <= 1180) return true;
+  return w <= 1400 && window.matchMedia("(pointer: coarse)").matches;
+}
 
 window.addEventListener("resize", () => {
   if (window.innerWidth <= 768) renderMobCanvas();
-  else if (window.innerWidth <= 1180) renderTabletCanvas();
+  else if (isTabletViewport()) renderTabletCanvas();
 });
 
 // ══════════════════════════════════════════
@@ -3465,6 +3579,16 @@ function showTabletAnalysisDone(text) {
   document.getElementById("tab-cards").innerHTML = buildMobCards(text);
 }
 
+// Default-on-open: show the last saved analysis, flagged with today's date.
+function showTabletAnalysisFromHistory(text) {
+  showTabletAnalysisDone(text);
+  const badge = document.getElementById("tab-from-badge");
+  if (badge) {
+    badge.textContent = `📁 Your last analysis · ${nowStamp()}`;
+    badge.classList.add("visible");
+  }
+}
+
 function showTabletAnalysisError(msg) {
   document.getElementById("tab-a-placeholder").style.display = "none";
   document.getElementById("tab-streaming-view").style.display = "none";
@@ -3486,6 +3610,7 @@ function runTabletAnalysis() {
   document.getElementById("tab-cards").innerHTML = "";
   document.getElementById("tab-verdict-row").style.display = "none";
   document.getElementById("tab-error-box").style.display = "none";
+  document.getElementById("tab-from-badge")?.classList.remove("visible");
   document.getElementById("tab-analyze-btn").disabled = true;
   runAnalysis();
 }
@@ -3521,6 +3646,7 @@ function renderTabletHistory(items) {
 }
 async function loadTabletFromHistory(id, ticker) {
   try {
+    setLastTicker(ticker);
     const res = await fetch(`${API_BASE}/history/${id}`);
     const data = await res.json();
     document.getElementById("tab-ticker").value = ticker;
@@ -3529,15 +3655,19 @@ async function loadTabletFromHistory(id, ticker) {
     document.getElementById("tab-cards").innerHTML = "";
     document.getElementById("tab-verdict-row").style.display = "none";
     document.getElementById("tab-error-box").style.display = "none";
+    document.getElementById("tab-from-badge")?.classList.remove("visible");
     showTabletAnalysisDone(data.analysis_text);
     fetchTabletPrice(ticker);
   } catch { alert("Failed to load analysis."); }
 }
 
 // Init tablet chart on page load
-if (window.innerWidth > 768 && window.innerWidth <= 1180) {
-  fetchTabletPrice("AAPL");
+if (isTabletViewport()) {
+  document.getElementById("tab-ticker").value = lastTicker;
+  document.getElementById("tab-subtitle").textContent = lastTicker;
+  fetchTabletPrice(lastTicker);
   loadTabletHistory();
+  loadLastAnalysis(lastTicker, showTabletAnalysisFromHistory);
 }
 
 function formatBig(n) {
@@ -3684,6 +3814,16 @@ function showMobAnalysisDone(text) {
   document.getElementById("mob-cards").innerHTML = buildMobCards(text);
 }
 
+// Default-on-open: show the last saved analysis, flagged with today's date.
+function showMobAnalysisFromHistory(text) {
+  showMobAnalysisDone(text);
+  const badge = document.getElementById("mob-from-badge");
+  if (badge) {
+    badge.textContent = `📁 Your last analysis · ${nowStamp()}`;
+    badge.classList.add("visible");
+  }
+}
+
 function runMobAnalysis() {
   const ticker = document.getElementById("mob-ticker").value.trim().toUpperCase();
   if (!ticker) return;
@@ -3697,6 +3837,7 @@ function runMobAnalysis() {
   document.getElementById("mob-cards").innerHTML = "";
   document.getElementById("mob-verdict-row").style.display = "none";
   document.getElementById("mob-error-box").style.display = "none";
+  document.getElementById("mob-from-badge")?.classList.remove("visible");
   document.getElementById("mob-analyze-btn").disabled = true;
   document.getElementById("mob-spinner").classList.add("active");
   document.getElementById("mob-status-text").textContent = "Analyzing…";
@@ -3742,6 +3883,7 @@ function renderMobHistory(items) {
 
 async function loadMobFromHistory(id, ticker) {
   try {
+    setLastTicker(ticker);
     const res = await fetch(`${API_BASE}/history/${id}`);
     const data = await res.json();
     document.getElementById("mob-ticker").value = ticker;
@@ -3750,6 +3892,7 @@ async function loadMobFromHistory(id, ticker) {
     document.getElementById("mob-streaming-view").style.display = "none";
     document.getElementById("mob-cards").innerHTML = "";
     document.getElementById("mob-verdict-row").style.display = "none";
+    document.getElementById("mob-from-badge")?.classList.remove("visible");
     showMobAnalysisDone(data.analysis_text);
     fetchMobPrice(ticker);
   } catch { alert("Failed to load analysis."); }
@@ -3773,10 +3916,17 @@ document.addEventListener("touchstart", (e) => {
 });
 
 // Init mobile chart on page load
-if (window.innerWidth <= 768) fetchMobPrice("AAPL");
+if (window.innerWidth <= 768) {
+  document.getElementById("mob-ticker").value = lastTicker;
+  fetchMobPrice(lastTicker);
+  loadLastAnalysis(lastTicker, showMobAnalysisFromHistory);
+}
 
 // Load default chart
-loadChart("NASDAQ:AAPL");
+document.getElementById("ticker-input").value = lastTicker;
+document.getElementById("analysis-ticker").textContent = lastTicker;
+loadChart("NASDAQ:" + lastTicker);
+loadLastAnalysis(lastTicker, showDesktopAnalysisFromHistory);
 
 // ── Live Scanner ─────────────────────────────────────────────────────────────
 function scannerTimeAgo(raw) {
