@@ -181,6 +181,11 @@ def init_db():
 @app.on_event("startup")
 async def startup():
     init_db()
+    try:
+        from push_notifications import init_push_table
+        init_push_table()
+    except Exception as e:
+        print(f"[push] table init skipped: {e}")
 
 DAILY_LIMIT = int(os.environ.get("DAILY_LIMIT", "2"))
 
@@ -815,6 +820,20 @@ async def get_alerts(limit: int = 20):
                 "SELECT * FROM alerts_log ORDER BY fired_at DESC LIMIT ?", (limit,)
             ).fetchall()
         return [dict(r) for r in rows]
+
+
+class PushToken(BaseModel):
+    token: str
+    platform: str = "ios"
+
+@app.post("/push/register")
+async def push_register(body: PushToken):
+    try:
+        from push_notifications import save_token
+        save_token(body.token, body.platform)
+        return {"ok": True}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 class ExplainRequest(BaseModel):
