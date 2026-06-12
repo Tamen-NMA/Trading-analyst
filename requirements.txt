@@ -12,3 +12,9 @@ httpx[http2]>=0.27.0
 # Native iOS push (APNs)
 PyJWT>=2.8.0
 cryptography>=42.0.0
+
+# Voice assistant (Allen)
+openai-whisper>=20231117
+sounddevice>=0.4.6
+soundfile>=0.12.1
+numpy>=1.24.0

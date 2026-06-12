@@ -1,660 +1,661 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Allen — Voice Interface</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Allen — Your Trading Companion</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+  /* ════════════════════════════════════════════════════════════
+     FABLE × RITSU — warm parchment, playful motion, alive.
+     Motion rules: transform & opacity only · ease-out entries ·
+     reduced-motion respected.
+     ════════════════════════════════════════════════════════════ */
+  :root {
+    --paper:      #f6efdd;
+    --paper-deep: #efe5cc;
+    --ink:        #2d2a24;
+    --ink-soft:   #6b6354;
+    --terra:      #c8553d;
+    --terra-soft: #e07856;
+    --gold:       #d9a441;
+    --leaf:       #4a7045;
+    --leaf-soft:  #7fa86b;
+    --sky:        #5e8fb5;
+    --blossom:    #e8889b;
+    --blossom-soft:#f4b8c4;
+    --card:       #fdf9ee;
+    --line:       #d8cbab;
+  }
 
-html, body { width: 100%; height: 100%; overflow-x: hidden; }
+  /* ── Dark mode: "moonlit garden" — same soul, night palette ── */
+  html[data-theme="dark"] {
+    --paper:      #1a1828;
+    --paper-deep: #131120;
+    --ink:        #ece5d4;
+    --ink-soft:   #a89f8d;
+    --terra:      #e07856;
+    --terra-soft: #f09a78;
+    --gold:       #e6b85c;
+    --leaf:       #8fbf7a;
+    --leaf-soft:  #7fa86b;
+    --sky:        #7aa8cc;
+    --blossom:    #d4768c;
+    --blossom-soft:#e8a0b2;
+    --card:       #252238;
+    --line:       #3d3955;
+  }
 
-body {
-  background: #04030a;
-  color: #e2e8f0;
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: none;
-}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* Full-screen WebGL canvas behind everything */
-#c {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw; height: 100vh;
-  z-index: 1;
-  pointer-events: none;
-}
+  html, body { height: 100%; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, var(--bg-glow-1, #fbf6e8) 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, var(--bg-glow-2, #f1e6cb) 0%, transparent 55%),
+      var(--paper);
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: background 0.4s, color 0.4s;
+  }
+  html[data-theme="dark"] body {
+    --bg-glow-1: #2a2440;
+    --bg-glow-2: #221d36;
+  }
 
-/* Floating financial data stream */
-#data-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  overflow: hidden;
-}
-.df {
-  position: absolute;
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  white-space: nowrap;
-  font-family: 'Courier New', monospace;
-  opacity: 0;
-  user-select: none;
-}
+  /* faint paper grain */
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(0deg, rgba(45,42,36,0.014) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+    z-index: 1;
+  }
+  html[data-theme="dark"] body::before {
+    background-image: repeating-linear-gradient(0deg, rgba(236,229,212,0.012) 0 1px, transparent 1px 3px);
+  }
 
-/* Custom cursor */
-#cursor {
-  position: fixed;
-  width: 12px; height: 12px;
-  border-radius: 50%;
-  background: rgba(155,94,255,0.9);
-  box-shadow: 0 0 16px rgba(155,94,255,0.8), 0 0 40px rgba(155,94,255,0.3);
-  pointer-events: none;
-  z-index: 999;
-  transform: translate(-50%,-50%);
-  transition: width .15s, height .15s, background .3s;
-}
-#cursor.big {
-  width: 28px; height: 28px;
-  background: rgba(94,171,255,0.7);
-  box-shadow: 0 0 24px rgba(94,171,255,0.8), 0 0 60px rgba(94,171,255,0.3);
-}
-#cursor-trail {
-  position: fixed;
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  border: 1px solid rgba(155,94,255,0.3);
-  pointer-events: none;
-  z-index: 998;
-  transform: translate(-50%,-50%);
-  transition: left .12s ease, top .12s ease;
-}
+  /* dark: butterflies glow softly like fireflies, petals dim */
+  html[data-theme="dark"] .flutter { opacity: 0.75; filter: drop-shadow(0 0 6px rgba(230, 184, 92, 0.25)); }
+  html[data-theme="dark"] .petal   { filter: brightness(0.8) saturate(0.85); }
+  html[data-theme="dark"] .face    { box-shadow: 0 6px 28px rgba(212, 118, 140, 0.45); }
+  html[data-theme="dark"] .msg.user {
+    background: linear-gradient(160deg, #2c3a26, #243020);
+    border-color: #3d5234;
+    color: #cfe3c2;
+  }
+  html[data-theme="dark"] .msg { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
 
-/* All UI above WebGL */
-header, .stage, .transcript-wrap { position: relative; z-index: 10; }
+  /* theme toggle button */
+  .theme-toggle {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 6px 12px;
+    transition: transform 0.12s ease-out, background 0.4s;
+  }
+  .theme-toggle:active { transform: scale(0.92); }
+  @media (hover: hover) and (pointer: fine) {
+    .theme-toggle:hover { border-color: var(--gold); }
+  }
 
-header {
-  width: 100%; padding: 18px 32px;
-  display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 1px solid rgba(130,60,255,0.12);
-  background: rgba(4,3,10,0.6);
-  backdrop-filter: blur(16px);
-}
-.brand     { letter-spacing: 10px; font-size: 14px; font-weight: 700; color: #9b5eff; text-transform: uppercase; }
-.brand-sub { font-size: 9px; letter-spacing: 4px; color: #374151; text-transform: uppercase; margin-top: 3px; }
-.conn-badge{ font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: #374151; display:flex; align-items:center; gap:6px; }
-.conn-dot  { width:5px; height:5px; border-radius:50%; background:#374151; transition:background .4s; }
-.conn-dot.live{ background:#9b5eff; box-shadow:0 0 8px #9b5eff; animation:dot-blink 2s ease-in-out infinite; }
-.back-link { font-size:10px; letter-spacing:3px; color:#374151; text-decoration:none; text-transform:uppercase; transition:color .2s; }
-.back-link:hover { color:#9b5eff; }
+  /* ── Floating garden (butterflies + petals) ─────────────────── */
+  #garden { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
 
-/* Stage — just the status text, entity is in the WebGL canvas */
-.stage {
-  flex: 0 0 auto;
-  display: flex; flex-direction: column; align-items: center;
-  /* Push status text below roughly where the entity sits */
-  margin-top: 320px;
-  padding-bottom: 20px;
-}
+  .flutter {
+    position: absolute;
+    will-change: transform;
+    animation: drift var(--dur, 26s) ease-in-out infinite alternate;
+    opacity: 0.9;
+  }
+  .flutter svg { display: block; animation: bob 3.4s ease-in-out infinite alternate; }
+  .flutter .wingL, .flutter .wingR { transform-origin: center; animation: flapL 0.9s ease-in-out infinite alternate; }
+  .flutter .wingR { animation-name: flapR; }
+  @keyframes flapL { from { transform: rotate(0deg); }  to { transform: rotate(-14deg); } }
+  @keyframes flapR { from { transform: rotate(0deg); }  to { transform: rotate(14deg); } }
+  @keyframes bob   { from { transform: translateY(0); } to { transform: translateY(-14px); } }
+  @keyframes drift {
+    from { transform: translate(0, 0) rotate(var(--tilt, 4deg)); }
+    to   { transform: translate(var(--dx, 60px), var(--dy, -40px)) rotate(calc(var(--tilt, 4deg) * -1)); }
+  }
 
-.status-area {
-  display: flex; flex-direction: column; align-items: center; gap: 7px;
-  min-height: 44px;
-  background: rgba(4,3,10,0.45);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(130,60,255,0.1);
-  border-radius: 20px;
-  padding: 10px 24px;
-}
-.status-line { display:flex; align-items:center; gap:8px; }
-.pulse-dot   { width:5px; height:5px; border-radius:50%; background:#9b5eff; animation:dot-blink 2.5s ease-in-out infinite; }
-@keyframes dot-blink { 0%,100%{opacity:1;} 50%{opacity:.12;} }
+  .petal {
+    position: absolute;
+    width: 12px; height: 12px;
+    background: radial-gradient(circle at 30% 30%, var(--blossom-soft), var(--blossom));
+    border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
+    opacity: 0;
+    will-change: transform, opacity;
+    animation: petalFall var(--dur, 14s) linear infinite;
+    animation-delay: var(--delay, 0s);
+  }
+  @keyframes petalFall {
+    0%   { transform: translate(0, -5vh) rotate(0deg); opacity: 0; }
+    8%   { opacity: 0.85; }
+    85%  { opacity: 0.85; }
+    100% { transform: translate(var(--sway, 80px), 108vh) rotate(320deg); opacity: 0; }
+  }
 
-#status-text {
-  font-size: 10px; letter-spacing: 5px; text-transform: uppercase;
-  color: #4b5563; transition: color .5s;
-}
-#status-text.listening { color: #9b5eff; }
-#status-text.thinking  { color: #5eabff; }
-#status-text.speaking  { color: #c084fc; }
+  @media (prefers-reduced-motion: reduce) {
+    .flutter, .flutter svg, .flutter .wingL, .flutter .wingR, .petal { animation: none !important; }
+    .petal { opacity: 0.4; top: var(--restY, 50%) !important; }
+  }
 
-#analyzing-text {
-  font-size: 9px; letter-spacing: 7px; text-transform: uppercase;
-  color: #5eabff; opacity: 0; transition: opacity .5s;
-  animation: flicker 2.6s ease-in-out infinite;
-}
-#analyzing-text.visible { opacity: 1; }
-@keyframes flicker { 0%,88%,100%{opacity:1;} 92%{opacity:.15;} 96%{opacity:1;} 98%{opacity:.35;} }
+  /* ── Header ─────────────────────────────────────────────────── */
+  header {
+    position: relative; z-index: 10;
+    display: flex; align-items: baseline; gap: 14px;
+    padding: 26px 34px 10px;
+  }
+  .brand { font-size: 30px; font-weight: 700; letter-spacing: 0.5px; }
+  .brand .spark { color: var(--terra); }
+  .tagline { color: var(--ink-soft); font-style: italic; font-size: 14px; }
+  .back-link {
+    margin-left: auto;
+    color: var(--leaf); text-decoration: none; font-size: 14px;
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 16px; background: var(--card);
+    transition: transform 0.12s ease-out;
+  }
+  .back-link:active { transform: scale(0.96); }
+  @media (hover: hover) and (pointer: fine) {
+    .back-link:hover { border-color: var(--leaf-soft); }
+  }
 
-/* Transcript */
-.transcript-wrap {
-  width: 100%; max-width: 680px;
-  padding: 0 28px 100px;
-  flex: 1;
-}
-.transcript-header {
-  font-size: 8px; letter-spacing: 5px; text-transform: uppercase;
-  color: #1f2937; border-top: 1px solid rgba(130,60,255,0.08);
-  padding-top: 18px; margin-bottom: 20px;
-}
-.msg { display:flex; gap:14px; margin-bottom:20px; animation:msg-in .35s ease; }
-@keyframes msg-in { from{opacity:0;transform:translateY(10px);} to{opacity:1;transform:translateY(0);} }
-.msg-av {
-  width:30px; height:30px; border-radius:50%; flex-shrink:0;
-  display:flex; align-items:center; justify-content:center;
-  font-size:9px; font-weight:700; letter-spacing:1px; margin-top:2px;
-}
-.msg.you   .msg-av { background:rgba(155,94,255,.1); color:#9b5eff; border:1px solid rgba(155,94,255,.25); }
-.msg.allen .msg-av { background:rgba(94,171,255,.1); color:#5eabff; border:1px solid rgba(94,171,255,.25); }
-.msg-who { font-size:9px; letter-spacing:3px; text-transform:uppercase; margin-bottom:5px; }
-.msg.you   .msg-who { color:#9b5eff; }
-.msg.allen .msg-who { color:#5eabff; }
-.msg-text { font-size:14px; line-height:1.65; color:#9ca3af; }
-.msg.allen .msg-text { color:#d1d5db; }
-.hint {
-  font-size:10px; letter-spacing:3px; text-transform:uppercase;
-  color:#1f2937; text-align:center; padding:24px 0 12px;
-  animation:hint-fade 4s ease-in-out infinite;
-}
-@keyframes hint-fade { 0%,40%,100%{opacity:.5;} 20%{opacity:1;} }
+  /* ── Stage: Allen herself ───────────────────────────────────── */
+  .stage {
+    position: relative; z-index: 10;
+    display: flex; flex-direction: column; align-items: center;
+    padding-top: 2vh;
+  }
 
-/* Click ripple */
-.ripple {
-  position: fixed;
-  border-radius: 50%;
-  border: 1px solid rgba(155,94,255,0.6);
-  pointer-events: none;
-  z-index: 8;
-  transform: translate(-50%,-50%) scale(0);
-  animation: ripple-out .8s ease-out forwards;
-}
-@keyframes ripple-out {
-  to { transform: translate(-50%,-50%) scale(1); opacity: 0; width: 200px; height: 200px; }
-}
+  #allen {
+    position: relative;
+    width: 300px; height: 340px;
+    display: grid; place-items: end center;
+  }
+
+  /* soft radial bloom behind her — replaces the petal ring */
+  .bloom {
+    position: absolute; left: 50%; top: 54%;
+    width: 280px; height: 280px;
+    margin: -140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--blossom-soft) 0%, transparent 65%);
+    opacity: 0.55;
+    transition: opacity 0.4s, background 0.4s;
+    animation: bloomBreathe 4s ease-in-out infinite alternate;
+  }
+  @keyframes bloomBreathe { from { transform: scale(1); } to { transform: scale(1.08); } }
+  #allen.listening .bloom { background: radial-gradient(circle, #fbd1da 0%, transparent 65%); opacity: 0.8; }
+  #allen.thinking  .bloom { background: radial-gradient(circle, #cfe0ee 0%, transparent 65%); opacity: 0.7; }
+  #allen.speaking  .bloom { background: radial-gradient(circle, #f4c9a8 0%, transparent 65%); opacity: 0.8; }
+
+  /* the freeform figure */
+  #avatar {
+    position: relative; z-index: 5;
+    height: 320px; width: auto;
+    display: block;
+    filter: drop-shadow(0 10px 18px rgba(45, 42, 36, 0.22));
+    transform-origin: 50% 92%;             /* pivot at her feet */
+    animation: sway 4.4s ease-in-out infinite alternate;
+    transition: filter 0.4s;
+  }
+  /* idle: gentle sway + breath, pivoting from the feet like she's standing */
+  @keyframes sway {
+    from { transform: rotate(-0.7deg) translateY(0); }
+    to   { transform: rotate(0.7deg)  translateY(-3px); }
+  }
+  #avatar-fallback {
+    display: none;
+    width: 130px; height: 130px;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 54px; font-weight: 700; color: var(--terra);
+    background: radial-gradient(circle at 35% 30%, #ffe9b8, var(--gold) 75%);
+  }
+
+  /* ground shadow beneath her feet */
+  .ground {
+    position: absolute; left: 50%; bottom: 2px; z-index: 4;
+    width: 150px; height: 18px; margin-left: -75px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(45,42,36,0.22), transparent 70%);
+    animation: groundPulse 4.4s ease-in-out infinite alternate;
+  }
+  @keyframes groundPulse { from { transform: scaleX(1); } to { transform: scaleX(0.93); } }
+  html[data-theme="dark"] .ground { background: radial-gradient(ellipse, rgba(0,0,0,0.5), transparent 70%); }
+
+  /* emote bubble near her head — her "expressions" */
+  .emote {
+    position: absolute; right: 8px; top: 18px; z-index: 7;
+    background: var(--card);
+    border: 1.5px solid var(--line);
+    border-radius: 14px 14px 14px 3px;
+    padding: 6px 10px;
+    font-size: 17px; line-height: 1;
+    box-shadow: 0 3px 10px rgba(45, 42, 36, 0.12);
+    opacity: 0;
+    transform: scale(0.8);
+    transform-origin: bottom left;
+    transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
+  }
+  .emote.show { opacity: 1; transform: scale(1); }
+
+  /* per-state body language */
+  #allen.listening #avatar {
+    animation: leanIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    filter: drop-shadow(0 10px 18px rgba(45,42,36,0.22)) saturate(1.1) brightness(1.04);
+  }
+  @keyframes leanIn { to { transform: rotate(0deg) translateY(-5px) scale(1.035); } }
+
+  #allen.thinking #avatar {
+    animation: ponder 3s ease-in-out infinite alternate;
+    filter: drop-shadow(0 10px 18px rgba(45,42,36,0.22)) saturate(0.9);
+  }
+  @keyframes ponder {
+    from { transform: rotate(-2deg) translateY(0); }
+    to   { transform: rotate(-0.5deg) translateY(-2px); }
+  }
+
+  #allen.speaking #avatar {
+    animation: talkBob 0.62s ease-in-out infinite alternate;
+    filter: drop-shadow(0 10px 18px rgba(45,42,36,0.22)) saturate(1.08) brightness(1.03);
+  }
+  @keyframes talkBob {
+    from { transform: translateY(0) rotate(0.3deg) scale(1); }
+    to   { transform: translateY(-4px) rotate(-0.3deg) scale(1.012); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #avatar, .bloom, .ground { animation: none !important; }
+  }
+
+  /* voicebars: floats beside her head while she talks */
+  .voicebars { position: absolute; left: 14px; top: 52px; display: none; gap: 3px; z-index: 6; }
+  .voicebars i {
+    width: 4px; height: 8px; background: var(--terra); border-radius: 2px;
+    animation: sing 0.55s ease-in-out infinite alternate;
+  }
+  .voicebars i:nth-child(2) { animation-delay: 0.12s; }
+  .voicebars i:nth-child(3) { animation-delay: 0.24s; }
+  .voicebars i:nth-child(4) { animation-delay: 0.36s; }
+  @keyframes sing { from { transform: scaleY(0.5); } to { transform: scaleY(1.7); } }
+
+  /* listening halo */
+  .halo {
+    position: absolute; inset: -14px;
+    border: 3px solid var(--blossom);
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  #allen.listening .halo { animation: haloPulse 1.5s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+  @keyframes haloPulse {
+    0%   { opacity: 0.7; transform: scale(0.96); }
+    100% { opacity: 0;   transform: scale(1.22); }
+  }
+
+  /* thinking orbit dots */
+  .orbit { position: absolute; inset: -8px; opacity: 0; transition: opacity 0.25s; }
+  .orbit i {
+    position: absolute; left: 50%; top: 50%;
+    width: 10px; height: 10px; margin: -5px;
+    border-radius: 50%;
+    background: var(--sky);
+  }
+  #allen.thinking .orbit { opacity: 1; animation: orbitSpin 1.6s linear infinite; }
+  @keyframes orbitSpin { to { transform: rotate(360deg); } }
+  .orbit i:nth-child(1) { transform: rotate(0deg)   translateX(128px); }
+  .orbit i:nth-child(2) { transform: rotate(120deg) translateX(128px); background: var(--leaf-soft); }
+  .orbit i:nth-child(3) { transform: rotate(240deg) translateX(128px); background: var(--gold); }
+
+  /* ── State variations ──────────────────────────────────────── */
+  #allen.speaking .voicebars { display: flex; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .voicebars i, #allen.listening .halo, #allen.thinking .orbit { animation: none !important; }
+  }
+
+  /* status pill */
+  .status {
+    margin-top: 22px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 22px;
+    font-size: 15px; font-style: italic;
+    color: var(--ink-soft);
+    display: flex; align-items: center; gap: 9px;
+    transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .status .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--leaf-soft);
+    transition: background 0.3s;
+  }
+  .status.listening .dot { background: var(--blossom); }
+  .status.thinking  .dot { background: var(--sky); }
+  .status.speaking  .dot { background: var(--terra); }
+
+  /* ── Conversation scroll ───────────────────────────────────── */
+  .scroll-wrap {
+    position: relative; z-index: 10;
+    flex: 1; min-height: 0;
+    width: min(680px, calc(100% - 40px));
+    margin: 3vh auto 0;
+    display: flex; flex-direction: column;
+  }
+  .scroll-title {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 12px; letter-spacing: 3px; text-transform: uppercase;
+    padding-bottom: 10px;
+  }
+  .scroll-title::before, .scroll-title::after { content: " ❦ "; color: var(--gold); }
+
+  #transcript {
+    flex: 1; overflow-y: auto;
+    padding: 6px 10px 30px;
+    scrollbar-width: thin; scrollbar-color: var(--line) transparent;
+  }
+  #transcript::-webkit-scrollbar { width: 5px; }
+  #transcript::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+
+  .msg {
+    max-width: 78%;
+    margin-bottom: 14px;
+    padding: 12px 17px;
+    font-size: 15px; line-height: 1.55;
+    border-radius: 16px;
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+    animation: msgIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    box-shadow: 0 2px 8px rgba(45, 42, 36, 0.05);
+  }
+  @keyframes msgIn { to { opacity: 1; transform: translateY(0) scale(1); } }
+  @media (prefers-reduced-motion: reduce) { .msg { animation: none; opacity: 1; transform: none; } }
+
+  .msg.user {
+    margin-left: auto;
+    background: linear-gradient(160deg, #e4eed9, #d3e3c4);
+    border: 1px solid #bcd3a8;
+    border-bottom-right-radius: 5px;
+    color: #2f4528;
+  }
+  .msg.allen {
+    margin-right: auto;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--terra);
+    border-bottom-left-radius: 5px;
+  }
+  .msg .who {
+    display: block;
+    font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 4px; opacity: 0.6;
+  }
+
+  .empty-note {
+    text-align: center; color: var(--ink-soft); font-style: italic;
+    padding: 30px 20px; font-size: 14px;
+  }
+
+  /* mobile tune */
+  @media (max-width: 600px) {
+    header { padding: 18px 20px 6px; }
+    .brand { font-size: 24px; }
+    .tagline { display: none; }
+    #allen { width: 220px; height: 250px; }
+    #avatar { height: 235px; }
+    .bloom { width: 210px; height: 210px; margin: -105px; }
+    .ground { width: 110px; margin-left: -55px; }
+    .orbit i:nth-child(1) { transform: rotate(0deg)   translateX(95px); }
+    .orbit i:nth-child(2) { transform: rotate(120deg) translateX(95px); }
+    .orbit i:nth-child(3) { transform: rotate(240deg) translateX(95px); }
+  }
 </style>
 </head>
 <body>
 
-<!-- WebGL full-screen -->
-<canvas id="c"></canvas>
-
-<!-- Floating data -->
-<div id="data-layer"></div>
-
-<!-- Custom cursor -->
-<div id="cursor"></div>
-<div id="cursor-trail"></div>
+<!-- floating garden -->
+<div id="garden"></div>
 
 <header>
-  <div>
-    <div class="brand">A · L · L · E · N</div>
-    <div class="brand-sub">McAllen Trading Assistant</div>
-  </div>
-  <div class="conn-badge">
-    <div class="conn-dot" id="conn-dot"></div>
-    <span id="conn-label">Connecting…</span>
-  </div>
-  <a class="back-link" href="/">← Trading App</a>
+  <div class="brand"><span class="spark">✳</span> Allen</div>
+  <div class="tagline">Stories shape us. Markets move us forward.</div>
+  <a class="back-link" href="/">← Charts</a>
+  <button class="theme-toggle" id="theme-toggle" title="Toggle light / dark" onclick="toggleTheme()">🌙</button>
 </header>
 
-<div class="stage" id="stage" data-state="standby">
-  <div class="status-area">
-    <div class="status-line">
-      <div class="pulse-dot"></div>
-      <span id="status-text">Standby</span>
-    </div>
-    <div id="analyzing-text">Analyzing . . .</div>
+<div class="stage">
+  <div id="allen" class="idle">
+    <div class="bloom"></div>
+    <div class="halo"></div>
+    <div class="orbit"><i></i><i></i><i></i></div>
+    <!-- Freeform figure — 8 pose frames drive blinks, talking, and moods -->
+    <img id="avatar" src="pose-neutral.webp?v=2" alt="Allen"
+         onerror="this.onerror=null;this.src='allen-cutout.webp'">
+    <div id="avatar-fallback">A</div>
+    <div class="ground"></div>
+    <div class="emote" id="emote">🌸</div>
+    <div class="voicebars"><i></i><i></i><i></i><i></i></div>
+  </div>
+
+  <div class="status idle" id="status">
+    <span class="dot"></span><span id="status-text">Resting among the flowers…</span>
   </div>
 </div>
 
-<div class="transcript-wrap">
-  <div class="transcript-header">Conversation Log</div>
+<div class="scroll-wrap">
+  <div class="scroll-title">Conversation</div>
   <div id="transcript">
-    <div class="hint">Say &quot;Hello Allen&quot; to begin</div>
+    <div class="empty-note" id="empty-note">
+      Say hello — Allen is listening for her wake word. 🦋
+    </div>
   </div>
 </div>
 
-<script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js" } }
-</script>
+<script>
+/* ── Theme: light (Fable garden) / dark (moonlit garden) ────────── */
+(function initTheme() {
+  const saved = localStorage.getItem('allen-theme');
+  const theme = saved || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  applyTheme(theme);
+})();
 
-<script type="module">
-import * as THREE from 'three';
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
 
-// ── Renderer: full viewport ───────────────────────────────
-const canvas   = document.getElementById('c');
-const W = window.innerWidth, H = window.innerHeight;
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setSize(W, H);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0x000000, 0);
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('allen-theme', next);
+  applyTheme(next);
+}
+// keep button icon right once DOM is ready (init ran before header parsed)
+addEventListener('DOMContentLoaded', () =>
+  applyTheme(document.documentElement.getAttribute('data-theme') || 'light'));
 
-const scene  = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 200);
-camera.position.set(0, 0, 4.5);
-
-// Entity sits slightly above the viewport center
-const ENTITY_Y = 0.3;
-
-// ── Noise GLSL ────────────────────────────────────────────
-const NOISE = `
-vec3 mod289v3(vec3 x){return x-floor(x*(1./289.))*289.;}
-vec4 mod289v4(vec4 x){return x-floor(x*(1./289.))*289.;}
-vec4 permute(vec4 x){return mod289v4(((x*34.)+10.)*x);}
-vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-.85373472095314*r;}
-float snoise(vec3 v){
-  const vec2 C=vec2(1./6.,1./3.);const vec4 D=vec4(0.,.5,1.,2.);
-  vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);
-  vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.-g;
-  vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);
-  vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;
-  i=mod289v3(i);
-  vec4 p=permute(permute(permute(i.z+vec4(0.,i1.z,i2.z,1.))+i.y+vec4(0.,i1.y,i2.y,1.))+i.x+vec4(0.,i1.x,i2.x,1.));
-  float n_=.142857142857;vec3 ns=n_*D.wyz-D.xzx;
-  vec4 j=p-49.*floor(p*ns.z*ns.z);
-  vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.*x_);
-  vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.-abs(x)-abs(y);
-  vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);
-  vec4 s0=floor(b0)*2.+1.;vec4 s1=floor(b1)*2.+1.;vec4 sh=-step(h,vec4(0.));
-  vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
-  vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);
-  vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
-  p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
-  vec4 m=max(.5-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);m=m*m;
-  return 105.*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
-}`;
-
-// ── Entity shaders ────────────────────────────────────────
-const vertexShader = `
-${NOISE}
-uniform float uTime; uniform float uMorph;
-varying vec3 vNormal; varying vec3 vViewPos; varying vec3 vWorldPos;
-void main(){
-  float t=uTime; vec3 pos=position; vec3 n=normal;
-  float a1=snoise(pos*1.2+vec3(t*.28,0.,0.));
-  float a2=snoise(pos*2.3-vec3(0.,t*.21,t*.13));
-  float a3=snoise(pos*.75+vec3(t*.16,t*.19,0.));
-  float a4=snoise(pos*3.1+vec3(-t*.11,0.,t*.22));
-  vec3 abstractPos=pos+n*(a1*.52+a2*.28+a3*.30+a4*.12);
-  float sn=snoise(pos*5.5+vec3(t*.7))*.038;
-  vec3 spherePos=pos+n*sn;
-  vec3 bPos=pos; bPos.y*=1.55; bPos.x*=0.88;
-  float waist=-smoothstep(-.18,.0,pos.y)*smoothstep(.18,.0,pos.y)*.38;
-  float hips=smoothstep(-.55,-.22,pos.y)*smoothstep(.05,-.22,pos.y)*.20;
-  float chest=smoothstep(.08,.38,pos.y)*smoothstep(.60,.38,pos.y)*.16;
-  float head=smoothstep(.52,.80,pos.y)*.25;
-  float bn=snoise(bPos*1.9+vec3(t*.38))*.22+snoise(bPos*3.5-vec3(t*.22))*.10;
-  vec3 bodyPos=bPos+n*(waist+hips+chest+head+bn);
-  float m01=clamp(uMorph,0.,1.); float m12=clamp(uMorph-1.,0.,1.);
-  vec3 finalPos=mix(mix(abstractPos,spherePos,m01),bodyPos,m12);
-  vec4 mvPos=modelViewMatrix*vec4(finalPos,1.);
-  vViewPos=mvPos.xyz; vNormal=normalize(normalMatrix*normal); vWorldPos=finalPos;
-  gl_Position=projectionMatrix*mvPos;
-}`;
-
-const fragmentShader = `
-uniform float uTime; uniform float uMorph;
-varying vec3 vNormal; varying vec3 vViewPos; varying vec3 vWorldPos;
-void main(){
-  vec3 viewDir=normalize(-vViewPos);
-  float nDotV=max(dot(vNormal,viewDir),0.);
-  float fresnel=pow(1.-nDotV,2.8);
-  float tS=uTime*.10; float yF=vWorldPos.y*.5+.5;
-  vec3 deepPurple=vec3(.32,.06,.80); vec3 violet=vec3(.60,.18,.95);
-  vec3 indigo=vec3(.28,.18,.95); vec3 cyan=vec3(.04,.68,.92);
-  vec3 blue=vec3(.22,.42,.95); vec3 orange=vec3(1.0,.42,.06);
-  vec3 pink=vec3(.92,.24,.78); vec3 lavender=vec3(.72,.52,1.0);
-  float t1=sin(nDotV*3.14159+tS)*.5+.5;
-  float t2=sin(yF*6.283+tS*1.4)*.5+.5;
-  float t3=sin((nDotV+yF)*4.-tS*.85)*.5+.5;
-  float t4=sin(vWorldPos.x*3.+tS*1.1)*.5+.5;
-  vec3 col=mix(deepPurple,violet,t1);
-  col=mix(col,indigo,t2*.45); col=mix(col,cyan,t3*.30); col=mix(col,blue,t4*.25);
-  float rimPulse=sin(tS*2.3)*.5+.5;
-  col=mix(col,orange,fresnel*.55*rimPulse);
-  col=mix(col,pink,fresnel*.40*(1.-rimPulse));
-  col=mix(col,lavender,fresnel*.25);
-  vec3 L1=normalize(vec3(1.3,1.6,1.0)); vec3 L2=normalize(vec3(-1.,-.5,.8));
-  float diff1=max(dot(vNormal,L1),0.); float diff2=max(dot(vNormal,L2),0.)*.3;
-  col*=.25+.75*(diff1+diff2);
-  float spec1=pow(max(dot(reflect(-L1,vNormal),viewDir),0.),38.);
-  float spec2=pow(max(dot(reflect(-L2,vNormal),viewDir),0.),20.)*.4;
-  col+=spec1*mix(vec3(1.,.85,1.),vec3(.55,.75,1.),t1)*1.1;
-  col+=spec2*vec3(.85,.55,1.)*.5;
-  col=pow(col,vec3(1.08));
-  gl_FragColor=vec4(col,.97);
-}`;
-
-const mesh = new THREE.Mesh(
-  new THREE.SphereGeometry(1, 120, 120),
-  new THREE.ShaderMaterial({
-    vertexShader, fragmentShader,
-    uniforms: { uTime:{value:0}, uMorph:{value:0} },
-    transparent: true,
-  })
-);
-mesh.position.y = ENTITY_Y;
-scene.add(mesh);
-
-// ── Particle field ────────────────────────────────────────
-const PC = 2800;
-const pPos   = new Float32Array(PC * 3);
-const pVel   = new Float32Array(PC * 3);
-const pColor = new Float32Array(PC * 3);
-const pSize  = new Float32Array(PC);
-
-const palettes = [
-  [0.60, 0.18, 0.95],  // violet
-  [0.22, 0.42, 0.95],  // blue
-  [0.04, 0.68, 0.92],  // cyan
-  [0.92, 0.24, 0.78],  // pink
-  [0.72, 0.52, 1.00],  // lavender
+/* ── Garden: butterflies + falling petals ───────────────────────── */
+const PALETTES = [
+  ['#c8553d', '#e8a87c'], ['#5e8fb5', '#a8c8e0'], ['#4a7045', '#9bc18a'],
+  ['#d9a441', '#f2d49b'], ['#8a5fa0', '#c9aede'], ['#e8889b', '#f4b8c4'],
 ];
 
-for (let i = 0; i < PC; i++) {
-  const r = 3 + Math.random() * 12;
-  const theta = Math.random() * Math.PI * 2;
-  const phi   = Math.acos(2 * Math.random() - 1);
-  pPos[i*3]   = r * Math.sin(phi) * Math.cos(theta);
-  pPos[i*3+1] = r * Math.sin(phi) * Math.sin(theta) * 0.6;
-  pPos[i*3+2] = r * Math.cos(phi) * 0.4 - 1;
-  pVel[i*3]   = (Math.random() - .5) * 0.004;
-  pVel[i*3+1] = (Math.random() - .5) * 0.004;
-  pVel[i*3+2] = (Math.random() - .5) * 0.001;
-  const c = palettes[Math.floor(Math.random() * palettes.length)];
-  pColor[i*3]   = c[0]; pColor[i*3+1] = c[1]; pColor[i*3+2] = c[2];
-  pSize[i] = 0.5 + Math.random() * 2.5;
+function butterflySVG([a, b], size) {
+  return `<svg width="${size}" height="${size * 0.8}" viewBox="0 0 40 32">
+    <g class="wingL">
+      <path d="M19 16 C12 4 2 2 3 11 C4 18 12 20 19 16 Z" fill="${a}"/>
+      <path d="M19 17 C13 26 4 28 5 21 C6 16 13 15 19 17 Z" fill="${b}"/>
+    </g>
+    <g class="wingR">
+      <path d="M21 16 C28 4 38 2 37 11 C36 18 28 20 21 16 Z" fill="${a}"/>
+      <path d="M21 17 C27 26 36 28 35 21 C34 16 27 15 21 17 Z" fill="${b}"/>
+    </g>
+    <ellipse cx="20" cy="16" rx="1.6" ry="7" fill="#3d3526"/>
+  </svg>`;
 }
 
-const pGeo = new THREE.BufferGeometry();
-pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-pGeo.setAttribute('color',    new THREE.BufferAttribute(pColor, 3));
-pGeo.setAttribute('size',     new THREE.BufferAttribute(pSize, 1));
-
-const pMat = new THREE.ShaderMaterial({
-  vertexShader: `
-    attribute float size;
-    attribute vec3 color;
-    varying vec3 vColor;
-    varying float vAlpha;
-    void main(){
-      vColor = color;
-      vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-      vAlpha = clamp(1.0 - length(mvPos.xyz) / 18.0, 0.0, 1.0);
-      gl_PointSize = size * (280.0 / -mvPos.z);
-      gl_Position = projectionMatrix * mvPos;
-    }`,
-  fragmentShader: `
-    varying vec3 vColor;
-    varying float vAlpha;
-    void main(){
-      float d = length(gl_PointCoord - 0.5) * 2.0;
-      if(d > 1.0) discard;
-      float alpha = (1.0 - d*d) * vAlpha * 0.75;
-      gl_FragColor = vec4(vColor, alpha);
-    }`,
-  transparent: true,
-  depthWrite: false,
-  blending: THREE.AdditiveBlending,
-  vertexColors: true,
-});
-
-const particles = new THREE.Points(pGeo, pMat);
-scene.add(particles);
-
-// ── Orbital ring ─────────────────────────────────────────
-// A slow flat ring of brighter particles orbiting the entity
-const OR = 180;
-const orPos   = new Float32Array(OR * 3);
-const orColor = new Float32Array(OR * 3);
-const orSize  = new Float32Array(OR);
-for (let i = 0; i < OR; i++) {
-  const a = (i / OR) * Math.PI * 2;
-  const rad = 1.8 + Math.sin(i * 0.4) * 0.25;
-  orPos[i*3]   = Math.cos(a) * rad;
-  orPos[i*3+1] = ENTITY_Y + (Math.random() - .5) * 0.15;
-  orPos[i*3+2] = Math.sin(a) * rad * 0.3;
-  const c = palettes[i % palettes.length];
-  orColor[i*3] = c[0]; orColor[i*3+1] = c[1]; orColor[i*3+2] = c[2];
-  orSize[i] = 1.0 + Math.random() * 2.0;
+const garden = document.getElementById('garden');
+const N_BUTTERFLIES = innerWidth < 600 ? 6 : 10;
+for (let i = 0; i < N_BUTTERFLIES; i++) {
+  const el = document.createElement('div');
+  el.className = 'flutter';
+  const size = 22 + Math.random() * 26;
+  el.innerHTML = butterflySVG(PALETTES[i % PALETTES.length], size);
+  el.style.left = Math.random() * 92 + '%';
+  el.style.top  = Math.random() * 80 + '%';
+  el.style.setProperty('--dur',  18 + Math.random() * 20 + 's');
+  el.style.setProperty('--dx',  (Math.random() * 160 - 80) + 'px');
+  el.style.setProperty('--dy',  (Math.random() * 120 - 60) + 'px');
+  el.style.setProperty('--tilt', (Math.random() * 12 - 6) + 'deg');
+  el.querySelectorAll('.wingL,.wingR').forEach(w => w.style.animationDuration = (0.7 + Math.random() * 0.5) + 's');
+  garden.appendChild(el);
 }
-const orGeo = new THREE.BufferGeometry();
-orGeo.setAttribute('position', new THREE.BufferAttribute(orPos, 3));
-orGeo.setAttribute('color',    new THREE.BufferAttribute(orColor, 3));
-orGeo.setAttribute('size',     new THREE.BufferAttribute(orSize, 1));
-const orPoints = new THREE.Points(orGeo, pMat);
-scene.add(orPoints);
+const N_PETALS = innerWidth < 600 ? 8 : 14;
+for (let i = 0; i < N_PETALS; i++) {
+  const p = document.createElement('div');
+  p.className = 'petal';
+  p.style.left = Math.random() * 100 + '%';
+  p.style.setProperty('--dur',   10 + Math.random() * 14 + 's');
+  p.style.setProperty('--delay', -Math.random() * 20 + 's');
+  p.style.setProperty('--sway', (Math.random() * 160 - 80) + 'px');
+  p.style.setProperty('--restY', Math.random() * 90 + '%');
+  if (Math.random() > 0.6) p.style.background = 'radial-gradient(circle at 30% 30%, #f2d49b, #d9a441)';
+  garden.appendChild(p);
+}
 
-// ── Mouse tracking ────────────────────────────────────────
-const mouse  = { x: 0, y: 0, nx: 0, ny: 0 };   // current (lerped)
-const mouseT = { x: 0, y: 0, nx: 0, ny: 0 };   // target (raw)
+/* ── Allen state machine ────────────────────────────────────────── */
+const STATES = {
+  idle:      { label: 'Resting among the flowers…', emote: '' },
+  listening: { label: 'I’m all ears! 🌸',           emote: '👂' },
+  thinking:  { label: 'Hmm, let me check the charts…', emote: '💭' },
+  speaking:  { label: 'Here’s what I found!',       emote: '💬' },
+  alert:     { label: 'Heads up — this needs you!', emote: '⚠️' },
+};
 
-const cursor      = document.getElementById('cursor');
-const cursorTrail = document.getElementById('cursor-trail');
+/* ── Pose engine: 8 hand-drawn frames drive blinks, talk, moods ── */
+const POSES = ['neutral','blink','smile','talk','think','scratch','hug','angry'];
+const _poseCache = {};
+POSES.forEach(p => { const i = new Image(); i.src = `pose-${p}.webp?v=2`; _poseCache[p] = i; });
 
-window.addEventListener('mousemove', e => {
-  mouseT.x  = e.clientX;
-  mouseT.y  = e.clientY;
-  mouseT.nx = (e.clientX / W) * 2 - 1;
-  mouseT.ny = -(e.clientY / H) * 2 + 1;
-  cursor.style.left = e.clientX + 'px';
-  cursor.style.top  = e.clientY + 'px';
-});
+const avatarEl = () => document.getElementById('avatar');
+function setPose(p) { avatarEl().src = `pose-${p}.webp?v=2`; }
 
-window.addEventListener('click', e => {
-  // Ripple at click position
-  const r = document.createElement('div');
-  r.className = 'ripple';
-  r.style.left   = e.clientX + 'px';
-  r.style.top    = e.clientY + 'px';
-  r.style.width  = '10px';
-  r.style.height = '10px';
-  document.body.appendChild(r);
-  setTimeout(() => r.remove(), 900);
+let _poseTimers = [];
+function clearPoseLoop() { _poseTimers.forEach(clearTimeout); _poseTimers = []; }
+function after(ms, fn) { _poseTimers.push(setTimeout(fn, ms)); }
 
-  // Burst particles outward (fast scatter)
-  for (let i = 0; i < PC; i++) {
-    const dx = pPos[i*3]   - (mouseT.nx * 6);
-    const dy = pPos[i*3+1] - (mouseT.ny * 3);
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist < 3) {
-      const force = (3 - dist) * 0.06;
-      pVel[i*3]   += dx / dist * force;
-      pVel[i*3+1] += dy / dist * force;
-    }
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function startPoseLoop(state) {
+  clearPoseLoop();
+  if (state === 'idle' || state === 'listening') {
+    // attentive pose + natural blink every 3–6s
+    setPose(state === 'idle' ? 'neutral' : 'hug');
+    if (REDUCED) return;
+    (function blinkLoop() {
+      after(3000 + Math.random() * 3000, () => {
+        const back = state === 'idle' ? 'neutral' : 'hug';
+        setPose('blink');
+        after(160, () => { setPose(back); blinkLoop(); });
+      });
+    })();
   }
-});
-
-// Cursor grows over interactive elements
-document.querySelectorAll('a, button').forEach(el => {
-  el.addEventListener('mouseenter', () => cursor.classList.add('big'));
-  el.addEventListener('mouseleave', () => cursor.classList.remove('big'));
-});
-
-// ── Floating financial data ───────────────────────────────
-const DATA_ITEMS = [
-  '$AAPL +2.34%','RSI: 67.4','NVDA BULLISH','VOL: 2.8x avg',
-  'MA200 $183.40','BEARISH H&S','$TSLA -1.2%','BREAKOUT','$BTC 68,420',
-  'MACD ↑','SUPPORT: $180','DARK CLOUD','EPS +18%','OVERSOLD',
-  '$SPY 0.4%','RESISTANCE','HAMMER ↑','SHORT FLOAT: 4%','GOLDEN CROSS',
-  'P/E: 28.4','52W HIGH','VOLUME SURGE','INVERTED H&S','MORNING STAR',
-  '$NVDA +4.1%','BEARISH ENG.','DOJI TOP','CONSOLIDATING','$AMZN +1.8%',
-];
-const DATA_COLORS = ['rgba(155,94,255,{a})','rgba(94,171,255,{a})','rgba(192,132,252,{a})','rgba(129,200,216,{a})'];
-
-function spawnData() {
-  const el    = document.createElement('div');
-  el.className = 'df';
-  const text  = DATA_ITEMS[Math.floor(Math.random() * DATA_ITEMS.length)];
-  const col   = DATA_COLORS[Math.floor(Math.random() * DATA_COLORS.length)];
-  const alpha = 0.08 + Math.random() * 0.18;
-  el.textContent  = text;
-  el.style.color  = col.replace('{a}', alpha.toFixed(2));
-  el.style.left   = (2 + Math.random() * 96) + 'vw';
-  el.style.bottom = '-24px';
-  el.style.fontSize = (8 + Math.random() * 5) + 'px';
-  document.getElementById('data-layer').appendChild(el);
-
-  const dur  = 9000 + Math.random() * 8000;
-  const rise = (H + 40);
-  el.animate(
-    [{ transform:'translateY(0)', opacity:0 },
-     { transform:`translateY(-${rise*0.08}px)`, opacity:1, offset:0.08 },
-     { transform:`translateY(-${rise*0.88}px)`, opacity:alpha*3, offset:0.88 },
-     { transform:`translateY(-${rise}px)`, opacity:0 }],
-    { duration: dur, easing:'linear' }
-  ).onfinish = () => el.remove();
-}
-
-setInterval(spawnData, 500);
-for (let i = 0; i < 12; i++) setTimeout(spawnData, i * 300);
-
-// ── State machine ─────────────────────────────────────────
-let targetMorph  = 0;
-let currentMorph = 0;
-
-function setAllenState(s) {
-  document.getElementById('stage').dataset.state = s;
-  const st = document.getElementById('status-text');
-  const at = document.getElementById('analyzing-text');
-  const map = {
-    standby:  { label:'Standby',    cls:'',         morph:0, analyze:false },
-    listening:{ label:'Listening',  cls:'listening',morph:1, analyze:false },
-    thinking: { label:'Processing', cls:'thinking', morph:1, analyze:true  },
-    speaking: { label:'Speaking',   cls:'speaking', morph:2, analyze:false },
-  };
-  const cfg = map[s] || map.standby;
-  targetMorph    = cfg.morph;
-  st.textContent = cfg.label;
-  st.className   = cfg.cls;
-  at.classList.toggle('visible', cfg.analyze);
-}
-window.__setAllenState = setAllenState;
-
-// ── Animation loop ────────────────────────────────────────
-const clock = new THREE.Clock();
-let time = 0;
-
-function animate() {
-  requestAnimationFrame(animate);
-  time = clock.getElapsedTime();
-
-  // Lerp mouse
-  mouse.x  += (mouseT.x  - mouse.x)  * 0.06;
-  mouse.y  += (mouseT.y  - mouse.y)  * 0.06;
-  mouse.nx += (mouseT.nx - mouse.nx) * 0.06;
-  mouse.ny += (mouseT.ny - mouse.ny) * 0.06;
-
-  // Update cursor trail
-  cursorTrail.style.left = mouse.x + 'px';
-  cursorTrail.style.top  = mouse.y + 'px';
-
-  // Entity uniforms
-  mesh.material.uniforms.uTime.value = time;
-  currentMorph += (targetMorph - currentMorph) * 0.025;
-  mesh.material.uniforms.uMorph.value = currentMorph;
-
-  // Entity gentle rotation + mouse parallax
-  mesh.rotation.y = time * 0.14 + mouse.nx * 0.25;
-  mesh.rotation.x = Math.sin(time * 0.09) * 0.18 - mouse.ny * 0.15;
-  mesh.rotation.z = Math.sin(time * 0.07) * 0.08;
-
-  // Camera subtle drift with mouse
-  camera.position.x += (mouse.nx * 0.4 - camera.position.x) * 0.03;
-  camera.position.y += (mouse.ny * 0.25 + ENTITY_Y * 0.3 - camera.position.y) * 0.03;
-
-  // Particle field animation
-  const pPositions = pGeo.attributes.position.array;
-  const mxW = mouse.nx * 5, myW = mouse.ny * 2.5;
-  for (let i = 0; i < PC; i++) {
-    // Drift
-    pPositions[i*3]   += pVel[i*3];
-    pPositions[i*3+1] += pVel[i*3+1];
-    pPositions[i*3+2] += pVel[i*3+2];
-
-    // Mouse repulsion
-    const dx = pPositions[i*3]   - mxW;
-    const dy = pPositions[i*3+1] - myW;
-    const distSq = dx*dx + dy*dy;
-    if (distSq < 4 && distSq > 0.001) {
-      const inv = 0.006 / distSq;
-      pVel[i*3]   += dx * inv;
-      pVel[i*3+1] += dy * inv;
-    }
-
-    // Damping
-    pVel[i*3]   *= 0.98;
-    pVel[i*3+1] *= 0.98;
-    pVel[i*3+2] *= 0.99;
-
-    // Wrap bounds
-    if (Math.abs(pPositions[i*3])   > 14) pVel[i*3]   *= -1;
-    if (Math.abs(pPositions[i*3+1]) > 8 ) pVel[i*3+1] *= -1;
-    if (Math.abs(pPositions[i*3+2]) > 3 ) pVel[i*3+2] *= -1;
+  else if (state === 'thinking') {
+    // ponder: chin-hand, switch to head-scratch if it's taking a while
+    setPose('think');
+    if (REDUCED) return;
+    (function ponderLoop(n) {
+      after(3500, () => { setPose(n % 2 ? 'think' : 'scratch'); ponderLoop(n + 1); });
+    })(0);
   }
-  pGeo.attributes.position.needsUpdate = true;
-
-  // Orbital ring rotation
-  orPoints.rotation.y = time * 0.22;
-  orPoints.rotation.x = Math.sin(time * 0.15) * 0.12;
-
-  renderer.render(scene, camera);
+  else if (state === 'speaking') {
+    // mouth flap: open-mouth ↔ smile, slightly randomised so it reads natural
+    if (REDUCED) { setPose('talk'); return; }
+    (function flap(open) {
+      setPose(open ? 'talk' : 'smile');
+      after(220 + Math.random() * 140, () => flap(!open));
+    })(true);
+  }
+  else if (state === 'alert') {
+    setPose('angry');  // pointing at the chart — "look at this!"
+  }
 }
-animate();
 
-// ── Resize ────────────────────────────────────────────────
-window.addEventListener('resize', () => {
-  const w = window.innerWidth, h = window.innerHeight;
-  renderer.setSize(w, h);
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
-});
+let _emoteTimer = null;
+function setAllenState(state) {
+  if (!STATES[state]) state = 'idle';
+  const allen  = document.getElementById('allen');
+  const status = document.getElementById('status');
+  const emote  = document.getElementById('emote');
+  allen.className  = state;
+  status.className = 'status ' + state;
+  document.getElementById('status-text').textContent = STATES[state].label;
 
-// ── Transcript ────────────────────────────────────────────
+  startPoseLoop(state);
+
+  // emote bubble: pop in beside her head, retract when idle
+  clearTimeout(_emoteTimer);
+  if (STATES[state].emote) {
+    emote.textContent = STATES[state].emote;
+    emote.classList.add('show');
+    // while thinking, cycle little thought dots for life
+    if (state === 'thinking') {
+      let dots = 0;
+      (function cycle() {
+        emote.textContent = '💭' + '.'.repeat(dots % 3 + 0);
+        dots++;
+        _emoteTimer = setTimeout(cycle, 600);
+      })();
+    }
+  } else {
+    emote.classList.remove('show');
+  }
+
+  // tiny pop on state change — feedback, 150ms, ease-out
+  if (!REDUCED) {
+    status.style.transform = 'scale(1.05)';
+    setTimeout(() => status.style.transform = '', 150);
+  }
+}
+// start the idle blink loop on load
+startPoseLoop('idle');
+
+/* ── Transcript ─────────────────────────────────────────────────── */
 function addMessage(role, text) {
+  const note = document.getElementById('empty-note');
+  if (note) note.remove();
   const wrap = document.getElementById('transcript');
-  const hint = wrap.querySelector('.hint');
-  if (hint) hint.remove();
   const div = document.createElement('div');
-  div.className = `msg ${role}`;
-  div.innerHTML = `
-    <div class="msg-av">${role==='you'?'YOU':'A'}</div>
-    <div class="msg-body">
-      <div class="msg-who">${role==='you'?'You':'Allen'}</div>
-      <div class="msg-text">${text}</div>
-    </div>`;
+  const isUser = role === 'user';
+  div.className = 'msg ' + (isUser ? 'user' : 'allen');
+  div.innerHTML = `<span class="who">${isUser ? 'You' : '✳ Allen'}</span>${String(text).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}`;
   wrap.appendChild(div);
-  div.scrollIntoView({behavior:'smooth', block:'end'});
+  wrap.scrollTop = wrap.scrollHeight;
 }
 
-// ── SSE ───────────────────────────────────────────────────
-const connDot   = document.getElementById('conn-dot');
-const connLabel = document.getElementById('conn-label');
+/* ── Live events from the voice assistant ───────────────────────── */
 function connect() {
   const es = new EventSource('/voice/stream');
-  es.onopen = () => { connDot.classList.add('live'); connLabel.textContent='Live'; };
   es.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    if (msg.type==='ping')       return;
-    if (msg.type==='status')     setAllenState(msg.state);
-    if (msg.type==='transcript') addMessage(msg.role, msg.text);
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'status')     setAllenState(msg.state);
+      if (msg.type === 'transcript') addMessage(msg.role, msg.text);
+    } catch (err) { /* ignore malformed events */ }
   };
-  es.onerror = () => {
-    connDot.classList.remove('live');
-    connLabel.textContent='Reconnecting…';
-    setAllenState('standby');
-    es.close();
-    setTimeout(connect, 3000);
-  };
+  es.onerror = () => { es.close(); setTimeout(connect, 3000); };
 }
 connect();
-setAllenState('standby');
 </script>
 </body>
 </html>
