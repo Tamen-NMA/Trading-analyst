@@ -98,7 +98,7 @@ struct CandleChartView: View {
             }
             .frame(height: 240)
 
-            if let s = selected { candleIntel(s) }
+            candleIntel(selected ?? candles.last ?? candles[0])
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading).card()
     }
@@ -112,16 +112,32 @@ struct CandleChartView: View {
 
     private func candleIntel(_ c: Candle) -> some View {
         let bullish = c.close >= c.open
-        return HStack(spacing: 12) {
-            Text(shortDate(c.date)).font(.caption.bold())
-            Text("O \(c.open, specifier: "%.2f")").font(.caption2).foregroundStyle(Theme.inkSoft)
-            Text("H \(c.high, specifier: "%.2f")").font(.caption2).foregroundStyle(Theme.inkSoft)
-            Text("L \(c.low, specifier: "%.2f")").font(.caption2).foregroundStyle(Theme.inkSoft)
-            Text("C \(c.close, specifier: "%.2f")").font(.caption2.weight(.semibold))
-                .foregroundStyle(bullish ? Theme.bull : Theme.bear)
+        let idx = candles.firstIndex { $0.date == c.date } ?? candles.count - 1
+        let intel = CandleIntel.analyze(candles, at: idx)
+        return VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 12) {
+                Text(shortDate(c.date)).font(.caption.bold())
+                Text("O \(c.open, specifier: "%.2f")").font(.caption2).foregroundStyle(Theme.inkSoft)
+                Text("H \(c.high, specifier: "%.2f")").font(.caption2).foregroundStyle(Theme.inkSoft)
+                Text("L \(c.low, specifier: "%.2f")").font(.caption2).foregroundStyle(Theme.inkSoft)
+                Text("C \(c.close, specifier: "%.2f")").font(.caption2.weight(.semibold))
+                    .foregroundStyle(bullish ? Theme.bull : Theme.bear)
+            }
+            HStack(spacing: 8) {
+                Text(intel.signal.label)
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.vertical, 2).padding(.horizontal, 7)
+                    .background(intel.signal.color).clipShape(Capsule())
+                Text(intel.patternLabel).font(.caption2.weight(.semibold)).foregroundStyle(Theme.ink)
+                Text("· \(intel.control)").font(.caption2).foregroundStyle(Theme.inkSoft)
+            }
+            Text(intel.message).font(.caption2).foregroundStyle(Theme.inkSoft)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(8).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.black.opacity(0.03)).clipShape(RoundedRectangle(cornerRadius: 6))
+        .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+        .background(intel.signal.color.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private func color(_ c: Candle) -> Color { c.close >= c.open ? Theme.bull : Theme.bear }

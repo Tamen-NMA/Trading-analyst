@@ -22,22 +22,25 @@ struct PnLView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                if let s = vm.summary, (s.closed_trades > 0 || s.open_trades > 0) {
-                    VStack(spacing: 14) {
-                        hero(s)
-                        statGrid(s)
-                        if !s.by_setup.isEmpty { bySetup(s) }
-                        if !s.open.isEmpty { openTrades(s) }
-                        if !s.recent_closed.isEmpty { recentClosed(s) }
-                    }.padding(16)
-                } else if !vm.loading {
-                    Text("No trades logged yet.\nTap “I took this trade” on an analysis,\nor tell Allen: “I bought NVDA at 892”.")
-                        .multilineTextAlignment(.center).foregroundStyle(Theme.inkSoft).italic()
-                        .padding(.top, 60)
+            ZStack {
+                Theme.paper.ignoresSafeArea()
+                ScrollView {
+                    if let s = vm.summary, (s.closed_trades > 0 || s.open_trades > 0) {
+                        VStack(spacing: 14) {
+                            hero(s)
+                            statGrid(s)
+                            if !s.by_setup.isEmpty { bySetup(s) }
+                            if !s.open.isEmpty { openTrades(s) }
+                            if !s.recent_closed.isEmpty { recentClosed(s) }
+                        }.padding(16)
+                    } else if !vm.loading {
+                        Text("No trades logged yet.\nTap “I took this trade” on an analysis,\nor tell Allen: “I bought NVDA at 892”.")
+                            .multilineTextAlignment(.center).foregroundStyle(Theme.inkSoft).italic()
+                            .frame(maxWidth: .infinity).padding(.top, 80)
+                    }
                 }
+                .scrollContentBackground(.hidden)
             }
-            .background(Theme.paper.ignoresSafeArea())
             .navigationTitle("P&L")
             .refreshable { await vm.load() }
         }

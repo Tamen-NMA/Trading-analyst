@@ -41,21 +41,24 @@ struct WatchlistView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVStack(spacing: 10) {
-                    if vm.items.isEmpty && !vm.loading {
-                        Text("Nothing on watch yet.\nStar an analysis to add one.")
-                            .multilineTextAlignment(.center)
-                            .foregroundStyle(Theme.inkSoft).italic()
-                            .padding(.top, 40)
+            ZStack {
+                Theme.paper.ignoresSafeArea()
+                ScrollView {
+                    LazyVStack(spacing: 10) {
+                        if vm.items.isEmpty && !vm.loading {
+                            Text("Nothing on watch yet.\nStar an analysis to add one.")
+                                .multilineTextAlignment(.center)
+                                .foregroundStyle(Theme.inkSoft).italic()
+                                .frame(maxWidth: .infinity).padding(.top, 60)
+                        }
+                        ForEach(vm.items) { item in
+                            WatchCard(item: item) { Task { await vm.remove(item.id) } }
+                        }
                     }
-                    ForEach(vm.items) { item in
-                        WatchCard(item: item) { Task { await vm.remove(item.id) } }
-                    }
+                    .padding(16)
                 }
-                .padding(16)
+                .scrollContentBackground(.hidden)
             }
-            .background(Theme.paper.ignoresSafeArea())
             .navigationTitle("⭐ Watchlist")
             .refreshable { await vm.load() }
         }

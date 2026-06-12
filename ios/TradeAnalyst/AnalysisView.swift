@@ -38,20 +38,23 @@ struct AnalysisView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    searchBar
-                    if let p = vm.price { PriceCard(price: p) }
-                    if let p = vm.price, let candles = p.last_30_candles, !candles.isEmpty {
-                        CandleChartView(candles: candles, ma50: p.ma50, ma200: p.ma200)
+            ZStack {
+                Theme.paper.ignoresSafeArea()
+                ScrollView {
+                    VStack(spacing: 16) {
+                        searchBar
+                        if let p = vm.price { PriceCard(price: p) }
+                        if let p = vm.price, let candles = p.last_30_candles, !candles.isEmpty {
+                            CandleChartView(candles: candles, ma50: p.ma50, ma200: p.ma200)
+                        }
+                        if let e = vm.error { errorBox(e) }
+                        if !vm.text.isEmpty { analysisBody }
+                        if vm.streaming && vm.text.isEmpty { loading }
                     }
-                    if let e = vm.error { errorBox(e) }
-                    if !vm.text.isEmpty { analysisBody }
-                    if vm.streaming && vm.text.isEmpty { loading }
+                    .padding(16)
                 }
-                .padding(16)
+                .scrollContentBackground(.hidden)
             }
-            .background(Theme.paper.ignoresSafeArea())
             .navigationTitle("McAllen Analyst")
             .navigationBarTitleDisplayMode(.inline)
         }
