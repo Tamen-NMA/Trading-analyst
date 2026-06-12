@@ -827,6 +827,163 @@
     border-bottom:1px solid rgba(88,166,255,0.2);
   }
 
+  /* ── Watch tab (proximity view) ── */
+  .mw-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    padding: 12px 14px;
+    opacity: 0;
+    transform: translateY(6px);
+    animation: mwIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  @keyframes mwIn { to { opacity: 1; transform: translateY(0); } }
+  .mw-card:nth-child(1) { animation-delay: 0ms; }
+  .mw-card:nth-child(2) { animation-delay: 40ms; }
+  .mw-card:nth-child(3) { animation-delay: 80ms; }
+  .mw-card:nth-child(4) { animation-delay: 120ms; }
+  .mw-card:nth-child(5) { animation-delay: 160ms; }
+  .mw-card:nth-child(n+6) { animation-delay: 180ms; }
+  @media (prefers-reduced-motion: reduce) {
+    .mw-card { animation: none; opacity: 1; transform: none; }
+  }
+
+  .mw-head { align-items: baseline; display: flex; gap: 8px; margin-bottom: 8px; }
+  .mw-ticker { color: #e6edf3; font-size: 15px; font-weight: 800; letter-spacing: 0.5px; }
+  .mw-price  { color: #8b949e; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .mw-dist   { font-size: 11px; font-weight: 700; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .mw-dist.near { color: #d29922; }
+  .mw-dist.in   { color: #3fb950; }
+  .mw-dist.far  { color: #8b949e; }
+
+  .mw-bar {
+    background: rgba(255,255,255,0.07);
+    border-radius: 3px;
+    height: 4px;
+    margin-bottom: 9px;
+    overflow: hidden;
+  }
+  .mw-bar-fill {
+    background: #d29922;
+    border-radius: 3px;
+    height: 100%;
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .mw-bar-fill.in { background: #3fb950; }
+
+  .mw-levels { display: flex; gap: 6px; }
+  .mw-chip {
+    background: rgba(255,255,255,0.05);
+    border-radius: 5px;
+    color: #8b949e;
+    flex: 1;
+    font-size: 10px;
+    padding: 5px 7px;
+    text-align: center;
+  }
+  .mw-chip b { color: #e6edf3; display: block; font-size: 12px; font-variant-numeric: tabular-nums; }
+  .mw-chip.entry b { color: #d29922; }
+  .mw-chip.stop b  { color: #f85149; }
+  .mw-chip.tgt b   { color: #3fb950; }
+
+  /* ── P&L tab ── */
+  .pnl-hero {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    padding: 16px;
+    text-align: center;
+  }
+  .pnl-hero-label { color: #8b949e; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .pnl-hero-value { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; margin: 4px 0 2px; }
+  .pnl-hero-value.pos { color: #3fb950; }
+  .pnl-hero-value.neg { color: #f85149; }
+  .pnl-hero-sub { color: #6e7681; font-size: 11px; }
+  .pnl-goal-bar {
+    background: rgba(255,255,255,0.07);
+    border-radius: 3px;
+    height: 5px;
+    margin-top: 12px;
+    overflow: hidden;
+  }
+  .pnl-goal-fill {
+    background: linear-gradient(90deg, #d29922, #3fb950);
+    border-radius: 3px;
+    height: 100%;
+    transform-origin: left;
+    transform: scaleX(0);
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .pnl-grid { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; margin-bottom: 12px; }
+  .pnl-stat {
+    background: rgba(255,255,255,0.04);
+    border-radius: 9px;
+    padding: 10px 12px;
+  }
+  .pnl-stat-label { color: #8b949e; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .pnl-stat-value { color: #e6edf3; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+
+  .pnl-section { color: #58a6ff; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; margin: 14px 0 7px; text-transform: uppercase; }
+  .pnl-trade {
+    align-items: center;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 6px;
+    padding: 9px 12px;
+  }
+  .pnl-trade-ticker { color: #e6edf3; font-size: 12px; font-weight: 700; min-width: 44px; }
+  .pnl-trade-meta { color: #8b949e; flex: 1; font-size: 10px; }
+  .pnl-trade-val { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .pnl-trade-val.pos { color: #3fb950; }
+  .pnl-trade-val.neg { color: #f85149; }
+  .pnl-close-btn {
+    background: rgba(248,81,73,0.12);
+    border: 1px solid rgba(248,81,73,0.3);
+    border-radius: 6px;
+    color: #f85149;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 4px 9px;
+    transition: transform 0.1s;
+  }
+  .pnl-close-btn:active { transform: scale(0.95); }
+
+  /* ── Took-this-trade button + sizing row (trade plan) ── */
+  .mob-take-btn {
+    background: rgba(63,185,80,0.12);
+    border: 1px solid rgba(63,185,80,0.35);
+    border-radius: 9px;
+    color: #3fb950;
+    cursor: pointer;
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    margin: 10px 0 4px;
+    padding: 11px;
+    text-align: center;
+    transition: transform 0.1s, background 0.15s;
+    width: 100%;
+  }
+  .mob-take-btn:active { transform: scale(0.97); }
+  .mob-take-btn.done { background: rgba(63,185,80,0.25); pointer-events: none; }
+  .mob-stayout {
+    background: rgba(139,148,158,0.08);
+    border: 1px dashed rgba(139,148,158,0.35);
+    border-radius: 9px;
+    color: #8b949e;
+    font-size: 12px;
+    margin-top: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+
   /* kp-row colours adapted for gradient mobile background */
   @media (max-width:768px) {
     .kp-row               { background:rgba(255,255,255,0.04) !important; }
@@ -1337,6 +1494,8 @@
     <div class="mob-tabs">
       <button class="mob-tab active" id="mob-tab-chart"    onclick="setMobTab('chart')">Chart</button>
       <button class="mob-tab"        id="mob-tab-analysis" onclick="setMobTab('analysis')">Analysis</button>
+      <button class="mob-tab"        id="mob-tab-watch"    onclick="setMobTab('watch')">Watch</button>
+      <button class="mob-tab"        id="mob-tab-pnl"      onclick="setMobTab('pnl')">P&amp;L</button>
       <button class="mob-tab"        id="mob-tab-history"  onclick="setMobTab('history')">History</button>
     </div>
   </div>
@@ -1392,6 +1551,16 @@
     </div>
 
     <div class="mob-error-box" id="mob-error-box" style="display:none"></div>
+  </div>
+
+  <!-- Watch tab -->
+  <div class="mob-tab-content" id="mob-watch-tab" style="display:none">
+    <div id="mob-watch-list"><div class="mob-empty">Nothing on watch yet.<br>Star an analysis from History.</div></div>
+  </div>
+
+  <!-- P&L tab -->
+  <div class="mob-tab-content" id="mob-pnl-tab" style="display:none">
+    <div id="mob-pnl-body"><div class="mob-empty">No trades logged yet.</div></div>
   </div>
 
   <!-- History tab -->
@@ -2344,11 +2513,166 @@ function closeExplain() {
 let mobHistoryCache = [];
 
 function setMobTab(tab) {
-  ["chart","analysis","history"].forEach(t => {
+  ["chart","analysis","watch","pnl","history"].forEach(t => {
     document.getElementById(`mob-${t}-tab`).style.display = t === tab ? "block" : "none";
     document.getElementById(`mob-tab-${t}`).classList.toggle("active", t === tab);
   });
   if (tab === "history") loadMobHistory();
+  if (tab === "watch")   loadMobWatch();
+  if (tab === "pnl")     loadMobPnl();
+}
+
+// ── Watch tab: proximity-sorted watchlist ─────────────────────────────────────
+async function loadMobWatch() {
+  const box = document.getElementById("mob-watch-list");
+  try {
+    const wl = await (await fetch(`${API_BASE}/watchlist`)).json();
+    if (!wl.length) {
+      box.innerHTML = `<div class="mob-empty">Nothing on watch yet.<br>Star an analysis from History.</div>`;
+      return;
+    }
+    box.innerHTML = `<div class="mob-empty">Loading live prices…</div>`;
+    // fetch live prices in parallel (dedupe tickers)
+    const tickers = [...new Set(wl.map(i => i.ticker))];
+    const prices = {};
+    await Promise.all(tickers.map(async t => {
+      try { prices[t] = (await (await fetch(`${API_BASE}/price/${t}`)).json()).current_price; }
+      catch (e) { prices[t] = null; }
+    }));
+    // distance to entry, sorted nearest first
+    const items = wl.map(i => {
+      const px = prices[i.ticker];
+      const dist = (px && i.entry_price) ? ((px - i.entry_price) / i.entry_price) * 100 : null;
+      return { ...i, px, dist };
+    }).sort((a, b) => (a.dist === null ? 999 : Math.abs(a.dist)) - (b.dist === null ? 999 : Math.abs(b.dist)));
+
+    box.innerHTML = items.map(i => {
+      const inZone = i.dist !== null && i.dist >= 0 && i.dist <= 2;
+      const near   = i.dist !== null && Math.abs(i.dist) <= 5 && !inZone;
+      const distCls = inZone ? "in" : near ? "near" : "far";
+      const distTxt = i.dist === null ? "—"
+        : inZone ? "IN ENTRY ZONE"
+        : `${i.dist > 0 ? "+" : ""}${i.dist.toFixed(1)}% to entry`;
+      // bar: how close price is to entry (100% = at entry), clamp
+      const closeness = i.dist === null ? 0 : Math.max(0, Math.min(1, 1 - Math.abs(i.dist) / 10));
+      return `<div class="mw-card">
+        <div class="mw-head">
+          <span class="mw-ticker">${i.ticker}</span>
+          <span class="mw-price">${i.px ? "$" + i.px : "—"}</span>
+          <span class="mw-dist ${distCls}">${distTxt}</span>
+        </div>
+        <div class="mw-bar"><div class="mw-bar-fill ${inZone ? "in" : ""}" data-sx="${closeness}"></div></div>
+        <div class="mw-levels">
+          <div class="mw-chip entry">Entry<b>${i.entry_price ? "$" + i.entry_price : "—"}</b></div>
+          <div class="mw-chip stop">Stop<b>${i.stop_loss ? "$" + i.stop_loss : "—"}</b></div>
+          <div class="mw-chip tgt">Target<b>${i.target ? "$" + i.target : "—"}</b></div>
+        </div>
+      </div>`;
+    }).join("");
+    // animate bars after paint (transform only — GPU friendly)
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      box.querySelectorAll(".mw-bar-fill").forEach(el => {
+        el.style.transform = `scaleX(${el.dataset.sx})`;
+      });
+    }));
+  } catch (e) {
+    box.innerHTML = `<div class="mob-empty">Error loading watchlist.</div>`;
+  }
+}
+
+// ── P&L tab ───────────────────────────────────────────────────────────────────
+let _accountSize = 25000;
+// warm the account size early so position sizing is right on the first analysis
+fetch(`${API_BASE}/pnl`).then(r => r.json()).then(p => { _accountSize = p.account_size || 25000; }).catch(() => {});
+async function loadMobPnl() {
+  const box = document.getElementById("mob-pnl-body");
+  try {
+    const p = await (await fetch(`${API_BASE}/pnl`)).json();
+    _accountSize = p.account_size || 25000;
+    if (!p.closed_trades && !p.open_trades) {
+      box.innerHTML = `<div class="mob-empty">No trades logged yet.<br>Tap “I took this trade” on an analysis,<br>or tell the assistant: “I bought NVDA at 892”.</div>`;
+      return;
+    }
+    const mp = p.month_pnl_pct_of_account || 0;
+    const goalProgress = Math.max(0, Math.min(1, mp / (p.month_goal_pct || 40)));
+    const fmt = v => (v == null ? "—" : (v > 0 ? "+" : "") + v + "%");
+    const setups = Object.entries(p.by_setup || {})
+      .sort((a, b) => b[1].avg_pnl_pct - a[1].avg_pnl_pct);
+
+    box.innerHTML = `
+      <div class="pnl-hero">
+        <div class="pnl-hero-label">This month</div>
+        <div class="pnl-hero-value ${p.month_pnl >= 0 ? "pos" : "neg"}">${p.month_pnl >= 0 ? "+" : ""}$${Math.abs(p.month_pnl).toLocaleString()}</div>
+        <div class="pnl-hero-sub">${mp >= 0 ? "+" : ""}${mp}% of account · goal +${p.month_goal_pct}%</div>
+        <div class="pnl-goal-bar"><div class="pnl-goal-fill" id="pnl-goal-fill"></div></div>
+      </div>
+      <div class="pnl-grid">
+        <div class="pnl-stat"><div class="pnl-stat-label">Win rate</div><div class="pnl-stat-value">${p.win_rate != null ? p.win_rate + "%" : "—"}</div></div>
+        <div class="pnl-stat"><div class="pnl-stat-label">Closed / Open</div><div class="pnl-stat-value">${p.closed_trades} / ${p.open_trades}</div></div>
+        <div class="pnl-stat"><div class="pnl-stat-label">Avg win</div><div class="pnl-stat-value" style="color:#3fb950">${fmt(p.avg_win_pct)}</div></div>
+        <div class="pnl-stat"><div class="pnl-stat-label">Avg loss</div><div class="pnl-stat-value" style="color:#f85149">${fmt(p.avg_loss_pct)}</div></div>
+      </div>
+      ${setups.length ? `<div class="pnl-section">By setup — trade your winners</div>` + setups.map(([s, d]) =>
+        `<div class="pnl-trade">
+          <span class="pnl-trade-ticker" style="min-width:0;flex:1">${s.replace(/_/g, " ")}</span>
+          <span class="pnl-trade-meta" style="flex:0 0 auto">${d.trades} trades · ${d.win_rate}% win</span>
+          <span class="pnl-trade-val ${d.avg_pnl_pct >= 0 ? "pos" : "neg"}">${fmt(d.avg_pnl_pct)}</span>
+        </div>`).join("") : ""}
+      ${p.open.length ? `<div class="pnl-section">Open positions</div>` + p.open.map(t =>
+        `<div class="pnl-trade">
+          <span class="pnl-trade-ticker">${t.ticker}</span>
+          <span class="pnl-trade-meta">in @ $${t.entry_price}${t.shares ? " · " + t.shares + " sh" : ""}</span>
+          <button class="pnl-close-btn" onclick="mobCloseTrade(${t.id}, '${t.ticker}')">Close</button>
+        </div>`).join("") : ""}
+      ${p.recent_closed.length ? `<div class="pnl-section">Recent closed</div>` + p.recent_closed.map(t =>
+        `<div class="pnl-trade">
+          <span class="pnl-trade-ticker">${t.ticker}</span>
+          <span class="pnl-trade-meta">$${t.entry_price} → $${t.exit_price}</span>
+          <span class="pnl-trade-val ${t.pnl_pct >= 0 ? "pos" : "neg"}">${fmt(t.pnl_pct != null ? Math.round(t.pnl_pct * 100) / 100 : null)}</span>
+        </div>`).join("") : ""}`;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const f = document.getElementById("pnl-goal-fill");
+      if (f) f.style.transform = `scaleX(${goalProgress})`;
+    }));
+  } catch (e) {
+    box.innerHTML = `<div class="mob-empty">Error loading P&L.</div>`;
+  }
+}
+
+async function mobCloseTrade(id, ticker) {
+  const v = prompt(`Exit price for ${ticker}?`);
+  if (!v) return;
+  const exit = parseFloat(v.replace(/[$,]/g, ""));
+  if (isNaN(exit)) return alert("Invalid price");
+  await fetch(`${API_BASE}/trades/${id}/close`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ exit_price: exit }),
+  });
+  loadMobPnl();
+}
+
+async function mobTakeTrade(btn, ticker, entry, stop, target, shares) {
+  btn.textContent = "Logging…";
+  try {
+    await fetch(`${API_BASE}/trades`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticker, entry_price: entry, stop_loss: stop || null,
+                             target: target || null, shares: shares || null,
+                             setup: "mcallen_analysis" }),
+    });
+    btn.textContent = "✓ Trade logged";
+    btn.classList.add("done");
+  } catch (e) {
+    btn.textContent = "Failed — tap to retry";
+  }
+}
+
+function _firstPrice(str) {
+  if (!str) return null;
+  const m = String(str).match(/\$?([\d,]+\.?\d*)/);
+  return m ? parseFloat(m[1].replace(/,/g, "")) : null;
 }
 
 // ── Canvas chart ─────────────────────────────────────────
@@ -3259,7 +3583,38 @@ function buildMobCards(text) {
     </div>`;
   }
 
-  if (tradeRows) html += `<div class="mob-trade-divider">⚡ Trade Plan</div>${tradeRows}`;
+  // McAllen discipline: NEUTRAL verdict = no entry card at all. Stay out is the default.
+  const verdictMatch = text.match(/\*\*VERDICT:\*\*\s*(BULLISH|BEARISH|NEUTRAL)/i);
+  const verdict = verdictMatch ? verdictMatch[1].toUpperCase() : null;
+
+  if (verdict === "NEUTRAL") {
+    html += `<div class="mob-stayout">🤚 <b>When in doubt, stay out.</b><br>Verdict is NEUTRAL — no trade setup shown by design.</div>`;
+    return html;
+  }
+
+  if (tradeRows) {
+    html += `<div class="mob-trade-divider">⚡ Trade Plan</div>${tradeRows}`;
+
+    // Position sizing — risk 1% of account between entry and stop
+    const entryNum = _firstPrice(_parseEntry(setup));
+    const stopNum  = _firstPrice(_parseStop(setup));
+    if (entryNum && stopNum && entryNum > stopNum) {
+      const shares = Math.floor((_accountSize * 0.01) / (entryNum - stopNum));
+      const cost = Math.round(shares * entryNum);
+      html += `<div class="kp-row info">
+        <div class="kp-icon">🧮</div>
+        <div class="kp-text">
+          <div class="kp-label">Position size — 1% risk rule</div>
+          <div class="kp-value">${shares} shares (~$${cost.toLocaleString()}) · max loss $${Math.round(_accountSize * 0.01)} at your stop</div>
+        </div>
+      </div>`;
+      const tk = (document.getElementById("mob-ticker")?.value || "").toUpperCase().trim();
+      const tgtNum = _firstPrice((setup.match(/Target[:\s]+([^\n]+)/i) || [])[1]);
+      if (tk && verdict === "BULLISH") {
+        html += `<button class="mob-take-btn" onclick="mobTakeTrade(this, '${tk}', ${entryNum}, ${stopNum || "null"}, ${tgtNum || "null"}, ${shares})">✓ I took this trade</button>`;
+      }
+    }
+  }
   return html;
 }
 

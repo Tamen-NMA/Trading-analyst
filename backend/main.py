@@ -81,6 +81,24 @@ def init_db():
                     )
                 """)
                 cur.execute("""
+                    CREATE TABLE IF NOT EXISTS trades (
+                        id           SERIAL PRIMARY KEY,
+                        ticker       TEXT NOT NULL,
+                        entry_price  REAL NOT NULL,
+                        exit_price   REAL,
+                        shares       REAL,
+                        stop_loss    REAL,
+                        target       REAL,
+                        setup        TEXT,
+                        notes        TEXT,
+                        status       TEXT DEFAULT 'open',
+                        pnl          REAL,
+                        pnl_pct      REAL,
+                        opened_at    TIMESTAMPTZ DEFAULT NOW(),
+                        closed_at    TIMESTAMPTZ
+                    )
+                """)
+                cur.execute("""
                     CREATE TABLE IF NOT EXISTS analyses (
                         id            SERIAL PRIMARY KEY,
                         ticker        TEXT NOT NULL,
@@ -123,6 +141,24 @@ def init_db():
                     pattern      TEXT,
                     signal       TEXT,
                     fired_at     TEXT DEFAULT (datetime('now'))
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS trades (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticker       TEXT NOT NULL,
+                    entry_price  REAL NOT NULL,
+                    exit_price   REAL,
+                    shares       REAL,
+                    stop_loss    REAL,
+                    target       REAL,
+                    setup        TEXT,
+                    notes        TEXT,
+                    status       TEXT DEFAULT 'open',
+                    pnl          REAL,
+                    pnl_pct      REAL,
+                    opened_at    TEXT DEFAULT (datetime('now')),
+                    closed_at    TEXT
                 )
             """)
             conn.execute("""
@@ -629,6 +665,139 @@ async def remove_from_watchlist(watchlist_id: int):
         with _sqlite() as conn:
             conn.execute("UPDATE watchlist SET active = 0 WHERE id = ?", (watchlist_id,))
     return {"removed": watchlist_id}
+
+# ── Trades & P&L ───────────────────────────────────────────────────────────────
+
+ACCOUNT_SIZE = float(os.environ.get("ACCOUNT_SIZE", "25000"))
+RISK_PCT     = float(os.environ.get("RISK_PCT", "1.0"))
+
+class TradeOpen(BaseModel):
+    ticker:      str
+    entry_price: float
+    shares:      Optional[float] = None
+    stop_loss:   Optional[float] = None
+    target:      Optional[float] = None
+    setup:       Optional[str] = None
+    notes:       Optional[str] = None
+
+class TradeClose(BaseModel):
+    exit_price: float
+    notes:      Optional[str] = None
+
+@app.post("/trades")
+async def open_trade(t: TradeOpen):
+    ticker = t.ticker.upper().strip()
+    if DATABASE_URL:
+        with _pg() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """INSERT INTO trades (ticker, entry_price, shares, stop_loss, target, setup, notes)
+                       VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING id""",
+                    (ticker, t.entry_price, t.shares, t.stop_loss, t.target, t.setup, t.notes))
+                new_id = cur.fetchone()[0]
+            conn.commit()
+    else:
+        with _sqlite() as conn:
+            cur = conn.execute(
+                """INSERT INTO trades (ticker, entry_price, shares, stop_loss, target, setup, notes)
+                   VALUES (?,?,?,?,?,?,?)""",
+                (ticker, t.entry_price, t.shares, t.stop_loss, t.target, t.setup, t.notes))
+            new_id = cur.lastrowid
+    return {"id": new_id, "ticker": ticker, "status": "open"}
+
+@app.put("/trades/{trade_id}/close")
+async def close_trade(trade_id: int, body: TradeClose):
+    now = datetime.now(timezone.utc).isoformat()
+    # fetch the open trade
+    if DATABASE_URL:
+        import psycopg2.extras
+        with _pg() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM trades WHERE id = %s", (trade_id,))
+                row = cur.fetchone()
+    else:
+        with _sqlite() as conn:
+            row = conn.execute("SELECT * FROM trades WHERE id = ?", (trade_id,)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Trade not found")
+    row = dict(row)
+    shares = row.get("shares") or 0
+    pnl = (body.exit_price - row["entry_price"]) * shares if shares else None
+    pnl_pct = ((body.exit_price - row["entry_price"]) / row["entry_price"]) * 100
+    if DATABASE_URL:
+        with _pg() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE trades SET exit_price=%s, status='closed', pnl=%s, pnl_pct=%s, closed_at=%s, notes=COALESCE(%s, notes) WHERE id=%s",
+                    (body.exit_price, pnl, pnl_pct, now, body.notes, trade_id))
+            conn.commit()
+    else:
+        with _sqlite() as conn:
+            conn.execute(
+                "UPDATE trades SET exit_price=?, status='closed', pnl=?, pnl_pct=?, closed_at=?, notes=COALESCE(?, notes) WHERE id=?",
+                (body.exit_price, pnl, pnl_pct, now, body.notes, trade_id))
+    return {"id": trade_id, "status": "closed", "pnl": pnl, "pnl_pct": round(pnl_pct, 2)}
+
+@app.get("/trades")
+async def list_trades(status: Optional[str] = None, limit: int = 100):
+    q = "SELECT * FROM trades"
+    args: tuple = ()
+    if status in ("open", "closed"):
+        q += " WHERE status = %s" if DATABASE_URL else " WHERE status = ?"
+        args = (status,)
+    q += " ORDER BY opened_at DESC LIMIT " + str(int(limit))
+    if DATABASE_URL:
+        import psycopg2.extras
+        with _pg() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(q, args)
+                return [dict(r) for r in cur.fetchall()]
+    else:
+        with _sqlite() as conn:
+            rows = conn.execute(q, args).fetchall()
+        return [dict(r) for r in rows]
+
+@app.get("/pnl")
+async def pnl_summary():
+    trades = await list_trades(status="closed", limit=500)
+    open_trades = await list_trades(status="open", limit=100)
+    closed = [t for t in trades if t.get("pnl_pct") is not None]
+    wins   = [t for t in closed if t["pnl_pct"] > 0]
+    losses = [t for t in closed if t["pnl_pct"] <= 0]
+    total_pnl = sum(t["pnl"] for t in closed if t.get("pnl") is not None)
+
+    # this month
+    month_prefix = datetime.now(timezone.utc).strftime("%Y-%m")
+    month_closed = [t for t in closed if str(t.get("closed_at", "")).startswith(month_prefix)]
+    month_pnl = sum(t["pnl"] for t in month_closed if t.get("pnl") is not None)
+
+    # per-setup breakdown
+    by_setup: dict = {}
+    for t in closed:
+        s = t.get("setup") or "unspecified"
+        d = by_setup.setdefault(s, {"trades": 0, "wins": 0, "avg_pnl_pct": 0.0, "_sum": 0.0})
+        d["trades"] += 1
+        d["_sum"] += t["pnl_pct"]
+        if t["pnl_pct"] > 0: d["wins"] += 1
+    for s, d in by_setup.items():
+        d["avg_pnl_pct"] = round(d.pop("_sum") / d["trades"], 2)
+        d["win_rate"] = round(d["wins"] / d["trades"] * 100, 1)
+
+    return {
+        "account_size": ACCOUNT_SIZE,
+        "open_trades": len(open_trades),
+        "closed_trades": len(closed),
+        "win_rate": round(len(wins) / len(closed) * 100, 1) if closed else None,
+        "avg_win_pct":  round(sum(t["pnl_pct"] for t in wins) / len(wins), 2) if wins else None,
+        "avg_loss_pct": round(sum(t["pnl_pct"] for t in losses) / len(losses), 2) if losses else None,
+        "total_pnl": round(total_pnl, 2),
+        "month_pnl": round(month_pnl, 2),
+        "month_pnl_pct_of_account": round(month_pnl / ACCOUNT_SIZE * 100, 2),
+        "month_goal_pct": 40.0,
+        "by_setup": by_setup,
+        "open": open_trades,
+        "recent_closed": closed[:20],
+    }
 
 @app.get("/alerts")
 async def get_alerts(limit: int = 20):
