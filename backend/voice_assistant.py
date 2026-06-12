@@ -154,6 +154,43 @@ TOOLS = [
             },
         },
     },
+    {
+        "name": "log_trade",
+        "description": "Log a trade the user just took. Use when they say things like 'I bought NVDA at 892, 50 shares'.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "ticker":      {"type": "string"},
+                "entry_price": {"type": "number"},
+                "shares":      {"type": "number"},
+                "stop_loss":   {"type": "number"},
+                "target":      {"type": "number"},
+                "setup":       {"type": "string", "description": "Setup type, e.g. hammer, bullish_engulfing, breakout"},
+            },
+            "required": ["ticker", "entry_price"],
+        },
+    },
+    {
+        "name": "close_trade",
+        "description": "Close an open trade. Use when the user says 'I sold NVDA at 935'. Find the open trade by ticker first via get_pnl if needed.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "trade_id":   {"type": "integer", "description": "The open trade's id"},
+                "ticker":     {"type": "string", "description": "Ticker — used to find the open trade if trade_id unknown"},
+                "exit_price": {"type": "number"},
+            },
+            "required": ["exit_price"],
+        },
+    },
+    {
+        "name": "get_pnl",
+        "description": "Get P&L summary: win rate, monthly profit vs the 40% goal, per-setup performance, open trades.",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+        },
+    },
 ]
 
 # ── Tool execution ─────────────────────────────────────────────────────────────
@@ -242,6 +279,35 @@ def run_tool(name: str, inputs: dict) -> str:
                     f"{fired} UTC"
                 )
             return f"{len(alerts)} alert(s) fired:\n" + "\n".join(lines)
+
+        elif name == "log_trade":
+            r = http.post(f"{BACKEND_URL}/trades", json=inputs)
+            r.raise_for_status()
+            d = r.json()
+            return f"Trade logged: {d['ticker']} trade #{d['id']} open at ${inputs['entry_price']}."
+
+        elif name == "close_trade":
+            trade_id = inputs.get("trade_id")
+            if not trade_id and inputs.get("ticker"):
+                r = http.get(f"{BACKEND_URL}/trades", params={"status": "open"})
+                r.raise_for_status()
+                open_trades = [t for t in r.json() if t["ticker"] == inputs["ticker"].upper()]
+                if not open_trades:
+                    return f"No open trade found for {inputs['ticker'].upper()}."
+                trade_id = open_trades[0]["id"]
+            if not trade_id:
+                return "Need a trade_id or ticker to close a trade."
+            r = http.put(f"{BACKEND_URL}/trades/{trade_id}/close",
+                         json={"exit_price": inputs["exit_price"]})
+            r.raise_for_status()
+            d = r.json()
+            pnl_txt = f"${d['pnl']:.2f}" if d.get("pnl") is not None else "n/a"
+            return f"Trade #{trade_id} closed at ${inputs['exit_price']}. P&L: {pnl_txt} ({d['pnl_pct']}%)."
+
+        elif name == "get_pnl":
+            r = http.get(f"{BACKEND_URL}/pnl")
+            r.raise_for_status()
+            return json.dumps(r.json())
 
         elif name == "search_web":
             # Use Claude's built-in web search via a one-shot sub-call
@@ -384,6 +450,7 @@ def record_command() -> np.ndarray:
     print("  🎙️  Listening …")
     chunks: list = []
     silent_blocks = 0
+    has_speech    = False
     block_secs    = 0.1
     block_frames  = int(SAMPLE_RATE * block_secs)
     silence_limit = int(SILENCE_STOP_SECS / block_secs)
@@ -402,9 +469,13 @@ def record_command() -> np.ndarray:
         _time.sleep(block_secs)
         if chunks:
             level = rms(chunks[-1].flatten())
-            silent_blocks = silent_blocks + 1 if level < ENERGY_THRESHOLD else 0
-            if silent_blocks >= silence_limit:
-                break
+            if level >= ENERGY_THRESHOLD:
+                has_speech = True
+                silent_blocks = 0
+            elif has_speech:
+                silent_blocks += 1
+                if silent_blocks >= silence_limit:
+                    break
 
     stream.stop()
     stream.close()
