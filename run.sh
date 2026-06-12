@@ -38,6 +38,11 @@ BACKEND_PID=$!
 echo "Starting watchlist agent..."
 .venv/bin/python watchlist_agent.py &
 AGENT_PID=$!
+
+# Start market scanner
+echo "Starting market scanner..."
+.venv/bin/python market_scanner.py &
+SCANNER_PID=$!
 cd "$SCRIPT_DIR"
 
 sleep 2
@@ -54,8 +59,9 @@ echo ""
 echo "Ready!"
 echo "  App:             http://localhost:8000"
 echo "  Watchlist agent: running in background"
+echo "  Market scanner:  running in background"
 echo ""
 echo "Press Ctrl+C to stop."
 
-trap "kill $BACKEND_PID $AGENT_PID 2>/dev/null; echo 'Stopped.'" EXIT
+trap "kill $BACKEND_PID $AGENT_PID $SCANNER_PID 2>/dev/null; echo 'Stopped.'" EXIT
 wait $BACKEND_PID

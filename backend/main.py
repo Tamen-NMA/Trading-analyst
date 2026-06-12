@@ -111,6 +111,19 @@ def init_db():
                     )
                 """)
                 cur.execute("ALTER TABLE analyses ADD COLUMN IF NOT EXISTS user_ip TEXT")
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS scanner_alerts (
+                        id           SERIAL PRIMARY KEY,
+                        ticker       TEXT NOT NULL,
+                        price        REAL,
+                        gap_pct      REAL,
+                        rvol         REAL,
+                        volume       BIGINT,
+                        float_shares BIGINT,
+                        alert_type   TEXT,
+                        fired_at     TIMESTAMPTZ DEFAULT NOW()
+                    )
+                """)
             conn.commit()
     else:
         with _sqlite() as conn:
@@ -177,6 +190,19 @@ def init_db():
                 conn.execute("ALTER TABLE analyses ADD COLUMN user_ip TEXT")
             except Exception:
                 pass  # column already exists
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS scanner_alerts (
+                    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ticker       TEXT NOT NULL,
+                    price        REAL,
+                    gap_pct      REAL,
+                    rvol         REAL,
+                    volume       INTEGER,
+                    float_shares INTEGER,
+                    alert_type   TEXT,
+                    fired_at     TEXT DEFAULT (datetime('now'))
+                )
+            """)
 
 @app.on_event("startup")
 async def startup():
@@ -834,6 +860,36 @@ async def push_register(body: PushToken):
         return {"ok": True}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/scanner/hits")
+async def get_scanner_hits(limit: int = 50):
+    if DATABASE_URL:
+        import psycopg2.extras
+        with _pg() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT * FROM scanner_alerts ORDER BY fired_at DESC LIMIT %s", (limit,)
+                )
+                return [dict(r) for r in cur.fetchall()]
+    else:
+        with _sqlite() as conn:
+            rows = conn.execute(
+                "SELECT * FROM scanner_alerts ORDER BY fired_at DESC LIMIT ?", (limit,)
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+
+@app.get("/scanner/config")
+async def get_scanner_config():
+    return {
+        "price_min": float(os.environ.get("SCANNER_PRICE_MIN", "1")),
+        "price_max": float(os.environ.get("SCANNER_PRICE_MAX", "10")),
+        "float_max": int(os.environ.get("SCANNER_FLOAT_MAX", "10000000")),
+        "rvol_min": float(os.environ.get("SCANNER_RVOL_MIN", "5")),
+        "volume_min": int(os.environ.get("SCANNER_VOLUME_MIN", "500000")),
+        "gap_min_pct": float(os.environ.get("SCANNER_GAP_MIN_PCT", "10")),
+    }
 
 
 class ExplainRequest(BaseModel):

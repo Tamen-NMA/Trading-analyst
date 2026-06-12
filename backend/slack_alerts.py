@@ -168,6 +168,122 @@ def send_stop_breach_alert(
         return False
 
 
+def _format_shares(n: float | int | None) -> str:
+    if not n:
+        return "n/a"
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n / 1_000:.0f}K"
+    return str(int(n))
+
+
+def send_scanner_breakout_alert(
+    ticker: str,
+    price: float,
+    gap_pct: float,
+    rvol: float,
+    volume: int,
+    float_shares: int | None,
+) -> bool:
+    """Send an orange/green breakout alert — ticker meets all scanner thresholds."""
+    if not SLACK_WEBHOOK_URL:
+        print("[slack] SLACK_WEBHOOK_URL not set — skipping alert")
+        return False
+
+    payload = {
+        "channel": SLACK_CHANNEL,
+        "attachments": [
+            {
+                "color": "#3fb950",
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {"type": "plain_text", "text": f"🚀 {ticker} — BREAKOUT CANDIDATE", "emoji": True},
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {"type": "mrkdwn", "text": f"*Price*\n${price:.2f}"},
+                            {"type": "mrkdwn", "text": f"*Gap*\n+{gap_pct:.1f}%"},
+                            {"type": "mrkdwn", "text": f"*RVOL*\n{rvol:.1f}x"},
+                            {"type": "mrkdwn", "text": f"*Volume*\n{_format_shares(volume)}"},
+                            {"type": "mrkdwn", "text": f"*Float*\n{_format_shares(float_shares)}"},
+                        ],
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {"type": "mrkdwn", "text": "Meets all scanner thresholds — price, float, RVOL, volume, and gap."},
+                        ],
+                    },
+                ],
+            }
+        ],
+    }
+    try:
+        r = httpx.post(SLACK_WEBHOOK_URL, json=payload, timeout=10)
+        r.raise_for_status()
+        print(f"[slack] 🚀 Breakout alert sent for {ticker}")
+        return True
+    except Exception as e:
+        print(f"[slack] ❌ Breakout alert failed for {ticker}: {e}")
+        return False
+
+
+def send_scanner_warning_alert(
+    ticker: str,
+    price: float,
+    gap_pct: float,
+    rvol: float,
+    volume: int,
+    float_shares: int | None,
+) -> bool:
+    """Send a yellow early-warning alert — ticker is building momentum toward thresholds."""
+    if not SLACK_WEBHOOK_URL:
+        print("[slack] SLACK_WEBHOOK_URL not set — skipping alert")
+        return False
+
+    payload = {
+        "channel": SLACK_CHANNEL,
+        "attachments": [
+            {
+                "color": "#d29922",
+                "blocks": [
+                    {
+                        "type": "header",
+                        "text": {"type": "plain_text", "text": f"⚡ {ticker} — Building Momentum", "emoji": True},
+                    },
+                    {
+                        "type": "section",
+                        "fields": [
+                            {"type": "mrkdwn", "text": f"*Price*\n${price:.2f}"},
+                            {"type": "mrkdwn", "text": f"*Gap*\n+{gap_pct:.1f}%"},
+                            {"type": "mrkdwn", "text": f"*RVOL*\n{rvol:.1f}x"},
+                            {"type": "mrkdwn", "text": f"*Volume*\n{_format_shares(volume)}"},
+                            {"type": "mrkdwn", "text": f"*Float*\n{_format_shares(float_shares)}"},
+                        ],
+                    },
+                    {
+                        "type": "context",
+                        "elements": [
+                            {"type": "mrkdwn", "text": "Volume/gap accelerating — not yet at full breakout thresholds. Watch closely."},
+                        ],
+                    },
+                ],
+            }
+        ],
+    }
+    try:
+        r = httpx.post(SLACK_WEBHOOK_URL, json=payload, timeout=10)
+        r.raise_for_status()
+        print(f"[slack] ⚡ Building-momentum alert sent for {ticker}")
+        return True
+    except Exception as e:
+        print(f"[slack] ❌ Building-momentum alert failed for {ticker}: {e}")
+        return False
+
+
 def send_test_alert() -> bool:
     """Send a test message to confirm the webhook is working."""
     if not SLACK_WEBHOOK_URL:
