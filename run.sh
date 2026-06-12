@@ -33,6 +33,11 @@ echo "Starting backend on http://localhost:8000 ..."
 cd "$SCRIPT_DIR/backend"
 .venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000 &
 BACKEND_PID=$!
+
+# Start watchlist agent
+echo "Starting watchlist agent..."
+.venv/bin/python watchlist_agent.py &
+AGENT_PID=$!
 cd "$SCRIPT_DIR"
 
 sleep 2
@@ -47,9 +52,10 @@ fi
 
 echo ""
 echo "Ready!"
-echo "  App: http://localhost:8000"
+echo "  App:             http://localhost:8000"
+echo "  Watchlist agent: running in background"
 echo ""
 echo "Press Ctrl+C to stop."
 
-trap "kill $BACKEND_PID 2>/dev/null; echo 'Stopped.'" EXIT
+trap "kill $BACKEND_PID $AGENT_PID 2>/dev/null; echo 'Stopped.'" EXIT
 wait $BACKEND_PID
