@@ -1954,6 +1954,16 @@ function detectSR(candles, meta) {
   return { support: [...new Set(support)], resistance: [...new Set(resistance)] };
 }
 
+// Live price/stats + candle intel for the desktop view, independent of
+// the (paid) full analysis stream — used to populate the page on load.
+async function fetchDesktopPrice(ticker) {
+  try {
+    const res = await fetch(`${API_BASE}/price/${ticker}`);
+    const data = await res.json();
+    updateStats(data);
+  } catch (e) { console.warn("desktop price fetch", e); }
+}
+
 function renderDesktopIntel(data) {
   const el = document.getElementById('desktop-candle-intel');
   if (!el || !data || !data.last_30_candles) return;
@@ -2359,8 +2369,10 @@ async function loadFromHistory(id, ticker, searchedAt) {
     document.getElementById("analysis-ticker").textContent = ticker;
     document.getElementById("analysis-content").className = "analysis-content visible";
     document.getElementById("analysis-content").innerHTML = marked.parse(rawText);
+    document.getElementById("ticker-input").value = ticker;
 
     loadChart(ticker);
+    fetchDesktopPrice(ticker);
 
     const v = extractVerdict(rawText);
     if (v) showVerdict(v);
@@ -3926,6 +3938,7 @@ if (window.innerWidth <= 768) {
 document.getElementById("ticker-input").value = lastTicker;
 document.getElementById("analysis-ticker").textContent = lastTicker;
 loadChart("NASDAQ:" + lastTicker);
+fetchDesktopPrice(lastTicker);
 loadLastAnalysis(lastTicker, showDesktopAnalysisFromHistory);
 
 // ── Live Scanner ─────────────────────────────────────────────────────────────
