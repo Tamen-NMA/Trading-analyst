@@ -1854,7 +1854,20 @@ function getLastTicker() {
 function setLastTicker(ticker) {
   if (ticker) localStorage.setItem(LAST_TICKER_KEY, ticker.toUpperCase());
 }
-const lastTicker = getLastTicker();
+// Cross-device "last ticker": prefer the most recent server-side history
+// entry (covers analyses run from any device), fall back to this browser's
+// localStorage, then to AAPL.
+async function resolveLastTicker() {
+  try {
+    const res = await fetch(`${API_BASE}/history`);
+    const items = await res.json();
+    if (items && items.length && items[0].ticker) {
+      return items[0].ticker.toUpperCase();
+    }
+  } catch {}
+  return getLastTicker();
+}
+const lastTickerPromise = resolveLastTicker();
 
 function nowStamp() {
   const d = new Date();
@@ -1960,6 +1973,10 @@ async function fetchDesktopPrice(ticker) {
   try {
     const res = await fetch(`${API_BASE}/price/${ticker}`);
     const data = await res.json();
+    if (!res.ok || data.current_price == null) {
+      console.warn("desktop price fetch failed", data);
+      return;
+    }
     updateStats(data);
   } catch (e) { console.warn("desktop price fetch", e); }
 }
@@ -2023,7 +2040,9 @@ function updateStats(data) {
   ma50El.className = "stat-value " + (data.price_vs_ma50 === "above" ? "bullish" : "bearish");
 
   document.getElementById("s-vol").textContent = data.volume_ratio;
-  document.getElementById("ma-tag").textContent = `MA200: $${data.ma200} | MA50: $${data.ma50}`;
+  const ma200Str = data.ma200 != null ? `$${data.ma200}` : "—";
+  const ma50Str  = data.ma50  != null ? `$${data.ma50}`  : "—";
+  document.getElementById("ma-tag").textContent = `MA200: ${ma200Str} | MA50: ${ma50Str}`;
   document.getElementById("vol-tag").textContent = `Vol: ${data.volume_ratio}`;
   renderDesktopIntel(data);
 }
@@ -2837,6 +2856,10 @@ async function fetchMobPrice(ticker) {
   try {
     const res = await fetch(`${API_BASE}/price/${ticker}`);
     const data = await res.json();
+    if (!res.ok || data.current_price == null) {
+      console.warn("mobile price fetch failed", data);
+      return;
+    }
     currentPriceMeta = data;
     mobPriceData = data.last_30_candles;
     mobTouchIdx = null;
@@ -3568,6 +3591,10 @@ async function fetchTabletPrice(ticker) {
   try {
     const res = await fetch(`${API_BASE}/price/${ticker}`);
     const data = await res.json();
+    if (!res.ok || data.current_price == null) {
+      console.warn("tablet price fetch failed", data);
+      return;
+    }
     currentPriceMeta = data;
     tabletPriceData = data.last_30_candles;
     document.getElementById("tab-subtitle").textContent = ticker;
@@ -3675,11 +3702,14 @@ async function loadTabletFromHistory(id, ticker) {
 
 // Init tablet chart on page load
 if (isTabletViewport()) {
-  document.getElementById("tab-ticker").value = lastTicker;
-  document.getElementById("tab-subtitle").textContent = lastTicker;
-  fetchTabletPrice(lastTicker);
-  loadTabletHistory();
-  loadLastAnalysis(lastTicker, showTabletAnalysisFromHistory);
+  (async () => {
+    const lastTicker = await lastTickerPromise;
+    document.getElementById("tab-ticker").value = lastTicker;
+    document.getElementById("tab-subtitle").textContent = lastTicker;
+    fetchTabletPrice(lastTicker);
+    loadTabletHistory();
+    loadLastAnalysis(lastTicker, showTabletAnalysisFromHistory);
+  })();
 }
 
 function formatBig(n) {
@@ -3929,17 +3959,23 @@ document.addEventListener("touchstart", (e) => {
 
 // Init mobile chart on page load
 if (window.innerWidth <= 768) {
-  document.getElementById("mob-ticker").value = lastTicker;
-  fetchMobPrice(lastTicker);
-  loadLastAnalysis(lastTicker, showMobAnalysisFromHistory);
+  (async () => {
+    const lastTicker = await lastTickerPromise;
+    document.getElementById("mob-ticker").value = lastTicker;
+    fetchMobPrice(lastTicker);
+    loadLastAnalysis(lastTicker, showMobAnalysisFromHistory);
+  })();
 }
 
 // Load default chart
-document.getElementById("ticker-input").value = lastTicker;
-document.getElementById("analysis-ticker").textContent = lastTicker;
-loadChart("NASDAQ:" + lastTicker);
-fetchDesktopPrice(lastTicker);
-loadLastAnalysis(lastTicker, showDesktopAnalysisFromHistory);
+(async () => {
+  const lastTicker = await lastTickerPromise;
+  document.getElementById("ticker-input").value = lastTicker;
+  document.getElementById("analysis-ticker").textContent = lastTicker;
+  loadChart("NASDAQ:" + lastTicker);
+  fetchDesktopPrice(lastTicker);
+  loadLastAnalysis(lastTicker, showDesktopAnalysisFromHistory);
+})();
 
 // ── Live Scanner ─────────────────────────────────────────────────────────────
 function scannerTimeAgo(raw) {
