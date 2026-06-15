@@ -22,6 +22,10 @@ Thumbs.db
 .vscode/
 *.swp
 
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+
 # Claude Code local settings
 .claude/
 
