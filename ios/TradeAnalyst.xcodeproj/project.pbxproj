@@ -3,11 +3,15 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 70;
 	objects = {
 
+/* Begin PBXFileReference section */
+		A00000010000000000000013 /* TradeAnalyst.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TradeAnalyst.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		A0000001000000000000001C /* Exceptions for "TradeAnalyst" folder in "TradeAnalyst" target */ = {
+		A0000001000000000000001C /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -17,14 +21,7 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A0000001000000000000001A /* TradeAnalyst */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				A0000001000000000000001C /* Exceptions for "TradeAnalyst" folder in "TradeAnalyst" target */,
-			);
-			path = TradeAnalyst;
-			sourceTree = "<group>";
-		};
+		A0000001000000000000001A /* TradeAnalyst */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A0000001000000000000001C /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = TradeAnalyst; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -36,6 +33,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A00000010000000000000009 = {
+			isa = PBXGroup;
+			children = (
+				A0000001000000000000001A /* TradeAnalyst */,
+				A00000010000000000000012 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A00000010000000000000012 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A00000010000000000000013 /* TradeAnalyst.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
 		A0000001000000000000000F /* TradeAnalyst */ = {
@@ -91,28 +107,15 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXGroup section */
-		A00000010000000000000009 = {
-			isa = PBXGroup;
-			children = (
-				A0000001000000000000001A /* TradeAnalyst */,
-				A00000010000000000000012 /* Products */,
+/* Begin PBXResourcesBuildPhase section */
+		A00000010000000000000011 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
-			sourceTree = "<group>";
+			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A00000010000000000000012 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A00000010000000000000013 /* TradeAnalyst.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-/* End PBXGroup section */
-
-/* Begin PBXFileReference section */
-		A00000010000000000000013 /* TradeAnalyst.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TradeAnalyst.app; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A0000001000000000000000E /* Sources */ = {
@@ -123,16 +126,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXResourcesBuildPhase section */
-		A00000010000000000000011 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXResourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		A00000010000000000000015 /* Debug */ = {
@@ -186,6 +179,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = VMJH346JQ2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TradeAnalyst/Info.plist;
@@ -211,6 +205,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = VMJH346JQ2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TradeAnalyst/Info.plist;

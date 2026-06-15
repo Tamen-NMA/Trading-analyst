@@ -4,10 +4,12 @@ import Foundation
 actor APIClient {
     static let shared = APIClient()
 
-    /// Set this to your deployed backend, or a LAN IP while developing.
-    /// e.g. "http://192.168.1.20:8000" so the phone can reach your Mac.
+    /// Production backend on Railway. Override in Settings for local dev
+    /// (e.g. "http://192.168.1.20:8000" to hit your Mac on the LAN).
+    static let defaultBackend = "https://allentrade.com"
     nonisolated static var baseURL: String {
-        UserDefaults.standard.string(forKey: "backendURL") ?? "http://localhost:8000"
+        let v = UserDefaults.standard.string(forKey: "backendURL") ?? ""
+        return v.isEmpty ? "https://allentrade.com" : v
     }
 
     private var base: URL { URL(string: APIClient.baseURL)! }

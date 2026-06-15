@@ -18,13 +18,13 @@ this app talks to the same endpoints (`/analyze`, `/price`, `/history`, `/watchl
 The project uses Xcode 16 **synchronized folders** — every file in `TradeAnalyst/` is
 included automatically, no manual target membership needed.
 
-## Point it at your backend
+## Backend
 
-- In the app: **Allen tab → ⚙️ Settings → Backend**.
-- Simulator can use `http://localhost:8000`.
-- A real iPhone needs your Mac's LAN IP, e.g. `http://192.168.1.20:8000`
-  (find it with `ipconfig getifaddr en0`), and both devices on the same Wi-Fi.
-- `Info.plist` allows local-network HTTP for development. Switch to HTTPS before shipping.
+- **Production (default):** `https://allentrade.com` — the Railway deployment.
+  The app uses this out of the box; nothing to configure.
+- **Local dev override:** Allen tab → ⚙️ Settings → Backend → enter
+  `http://192.168.1.x:8000` (your Mac's LAN IP, `ipconfig getifaddr en0`) to hit a
+  local backend instead. Clear the field to fall back to production.
 
 ## Screens
 

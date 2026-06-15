@@ -112,7 +112,7 @@ struct AllenView: View {
 }
 
 struct SettingsView: View {
-    @AppStorage("backendURL") private var backendURL = "http://localhost:8000"
+    @AppStorage("backendURL") private var backendURL = "https://allentrade.com"
     @AppStorage("accountSize") private var accountSize: Double = 25000
     @Environment(\.dismiss) private var dismiss
 
