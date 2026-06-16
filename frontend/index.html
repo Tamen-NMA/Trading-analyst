@@ -1139,20 +1139,24 @@
   .mob-empty { color:#6e7681; font-size:13px; padding:48px 16px; text-align:center; }
 
   /* ── Candle Intel Panel (Tina Logan KB) ── */
-  #mob-candle-intel { display:none; background:rgba(15,23,42,0.97); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:10px 12px; margin:6px 0 8px; }
+  #mob-candle-intel { display:none; background:rgba(15,23,42,0.97); border:1px solid rgba(255,255,255,0.1); border-radius:14px; padding:12px 14px; margin:6px 0 8px; }
   .ci-pattern { font-size:13px; font-weight:700; color:#e6edf3; }
   .ci-signal-bull { color:#3fb950; font-weight:700; font-size:12px; }
   .ci-signal-bear { color:#f85149; font-weight:700; font-size:12px; }
   .ci-signal-neutral { color:#8b949e; font-weight:700; font-size:12px; }
   .ci-row { display:flex; align-items:center; gap:6px; margin-bottom:5px; flex-wrap:wrap; }
-  .ci-chip { border-radius:5px; padding:2px 7px; font-size:10.5px; font-weight:600; border:1px solid; }
+  .ci-chip { border-radius:6px; padding:3px 8px; font-size:11px; font-weight:600; border:1px solid; }
   .ci-chip.buyers { background:rgba(63,185,80,0.12); color:#3fb950; border-color:rgba(63,185,80,0.3); }
   .ci-chip.sellers { background:rgba(248,81,73,0.12); color:#f85149; border-color:rgba(248,81,73,0.3); }
   .ci-chip.contested { background:rgba(139,148,158,0.12); color:#8b949e; border-color:rgba(139,148,158,0.3); }
   .ci-chip.institutional { background:rgba(88,166,255,0.12); color:#58a6ff; border-color:rgba(88,166,255,0.3); }
   .ci-chip.retail { background:rgba(210,153,34,0.12); color:#d29922; border-color:rgba(210,153,34,0.3); }
   .ci-chip.mixed { background:rgba(139,148,158,0.08); color:#8b949e; border-color:rgba(139,148,158,0.2); }
-  .ci-msg { color:#c9d1d9; line-height:1.5; font-size:11.5px; }
+  /* S/R chips: full-width with label left, price right */
+  .ci-sr-list { display:flex; flex-direction:column; gap:5px; margin-top:4px; }
+  .ci-sr-chip { display:flex; align-items:center; justify-content:space-between; border-radius:8px; padding:6px 10px; font-size:11px; font-weight:600; border:1px solid; }
+  .ci-sr-chip .ci-sr-price { font-weight:700; font-size:12px; }
+  .ci-msg { color:#c9d1d9; line-height:1.5; font-size:11.5px; margin-top:6px; }
 
   /* Explain FAB */
   #mob-explain-fab {
@@ -3270,15 +3274,24 @@ function updateCandleIntel(idx) {
   const whoLbl   = intel.who==='institutional'?'Smart Money':intel.who==='retail'?'Retail Crowd':'Mixed Activity';
   const volBadge = intel.isHighVol?'<span class="ci-chip" style="background:rgba(88,166,255,.1);color:#58a6ff;border-color:rgba(88,166,255,.3)">⚡ High Vol</span>':'';
 
-  // Support / Resistance
+  // Support / Resistance — label left, price right
   const sr = detectSR(data, currentPriceMeta);
+  const srChip = (isRes, label) => {
+    const m = label.match(/^(.+?)\s+(\$[\d.]+)$/);
+    const name = m ? m[1] : label;
+    const price = m ? m[2] : '';
+    const cls = isRes ? 'sellers' : 'buyers';
+    const icon = isRes ? '⚡' : '🛡️';
+    const prefix = isRes ? 'Resistance' : 'Support';
+    return `<div class="ci-sr-chip ${cls}"><span>${icon} ${prefix}: ${name}</span><span class="ci-sr-price">${price}</span></div>`;
+  };
   const srHtml = [
-    ...sr.resistance.map(r=>`<span class="ci-chip sellers">⚡ Resistance: ${r}</span>`),
-    ...sr.support.map(s=>`<span class="ci-chip buyers">🛡️ Support: ${s}</span>`),
+    ...sr.resistance.map(r => srChip(true, r)),
+    ...sr.support.map(s => srChip(false, s)),
   ].join('');
 
   panel.innerHTML = `
-    <div class="ci-row" style="justify-content:space-between;margin-bottom:4px">
+    <div class="ci-row" style="justify-content:space-between;margin-bottom:6px">
       <span class="ci-pattern">🕯️ ${intel.pattern}</span>
       <span class="${sigCls}">${sigArrow} ${sigLabel}</span>
     </div>
@@ -3287,7 +3300,7 @@ function updateCandleIntel(idx) {
       <span class="ci-chip ${intel.who}">${whoIcon} ${whoLbl}</span>
       ${volBadge}
     </div>
-    ${srHtml ? `<div class="ci-row" style="margin-top:2px">${srHtml}</div>` : ''}
+    ${srHtml ? `<div class="ci-sr-list">${srHtml}</div>` : ''}
     <div class="ci-msg">${intel.msg}</div>`;
   panel.style.display='block';
 }
