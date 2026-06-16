@@ -760,6 +760,7 @@
     header, main { display: none !important; }
     #mob-view { display: flex; flex-direction: column; min-height: 100vh; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); }
     #explain-popup { right: 12px; bottom: 80px; left: auto !important; top: auto !important; max-width: calc(100vw - 24px); }
+    #scanner-bar { display: none !important; }
   }
 
   /* Header */
@@ -822,18 +823,68 @@
     display:flex; flex-direction:column;
   }
   .mob-chart-controls {
-    display:flex; gap:8px; padding:8px 10px; flex-shrink:0;
+    display:flex; gap:6px; padding:8px 10px; flex-shrink:0;
     border-bottom:1px solid rgba(255,255,255,0.07);
   }
-  .mob-dd-select {
-    appearance:none; -webkit-appearance:none; -moz-appearance:none;
-    background:rgba(255,255,255,0.05) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b949e' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
-    border:1px solid rgba(255,255,255,0.1);
-    border-radius:8px; color:#e6edf3; cursor:pointer;
-    font-size:12px; font-weight:600; transition:all .15s;
-    padding:7px 28px 7px 14px; flex:1; text-align:left;
+  .mob-filter-btn {
+    display:flex; align-items:center; gap:5px;
+    padding:6px 10px; border-radius:8px;
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+    color:#e6edf3; font-size:12px; font-weight:600;
+    cursor:pointer; transition:background .15s; flex:1; white-space:nowrap;
   }
-  .mob-dd-select:focus { outline:none; border-color:rgba(63,185,80,0.4); }
+  .mob-filter-btn:active { background:rgba(255,255,255,0.12); }
+  .mob-filter-btn svg { flex-shrink:0; }
+  .mob-filter-btn-dim { color:#8b949e; flex:0 0 auto; }
+  /* SL / TP bar above canvas */
+  .mob-sl-tp-bar {
+    display:flex; gap:6px; padding:6px 10px; flex-shrink:0;
+    align-items:center;
+  }
+  .mob-sl-badge {
+    padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700;
+    background:rgba(248,81,73,0.15); border:1px solid rgba(248,81,73,0.35);
+    color:#f85149; white-space:nowrap;
+  }
+  .mob-tp-badge {
+    padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700;
+    background:rgba(63,185,80,0.15); border:1px solid rgba(63,185,80,0.35);
+    color:#3fb950; white-space:nowrap;
+  }
+  .mob-rr-badge {
+    padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700;
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+    color:#8b949e; white-space:nowrap; margin-left:auto;
+  }
+  /* Bottom sheets */
+  .mob-bs-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200;
+  }
+  .mob-bs-panel {
+    position:fixed; bottom:0; left:0; right:0; z-index:201;
+    background:#1e293b; border-top:1px solid rgba(255,255,255,0.1);
+    border-radius:18px 18px 0 0;
+    padding-bottom:env(safe-area-inset-bottom,16px);
+    transform:translateY(100%); transition:transform .22s cubic-bezier(.4,0,.2,1);
+  }
+  .mob-bs-panel.open { transform:translateY(0); }
+  .mob-bs-handle {
+    width:36px; height:4px; border-radius:2px;
+    background:rgba(255,255,255,0.2); margin:10px auto 4px;
+  }
+  .mob-bs-title {
+    text-align:center; font-size:14px; font-weight:700; color:#e6edf3;
+    padding:8px 16px 10px;
+  }
+  .mob-bs-list { padding:0 12px 12px; }
+  .mob-bs-item {
+    display:flex; align-items:center; justify-content:space-between;
+    width:100%; padding:13px 14px; border-radius:10px;
+    background:none; border:none; color:#e6edf3;
+    font-size:14px; cursor:pointer; transition:background .12s;
+  }
+  .mob-bs-item:active, .mob-bs-item.active { background:rgba(255,255,255,0.08); }
+  .mob-bs-item .check { color:#3fb950; font-size:16px; }
   #mob-canvas { flex:1; width:100%; display:block; min-height:0; }
 
   /* Stats grid */
@@ -1549,8 +1600,6 @@
     <div class="mob-tabs">
       <button class="mob-tab active" id="mob-tab-chart"    onclick="setMobTab('chart')">Chart</button>
       <button class="mob-tab"        id="mob-tab-analysis" onclick="setMobTab('analysis')">Analysis</button>
-      <button class="mob-tab"        id="mob-tab-watch"    onclick="setMobTab('watch')">Watch</button>
-      <button class="mob-tab"        id="mob-tab-pnl"      onclick="setMobTab('pnl')">P&amp;L</button>
       <button class="mob-tab"        id="mob-tab-history"  onclick="setMobTab('history')">History</button>
     </div>
   </div>
@@ -1559,37 +1608,35 @@
   <div class="mob-tab-content" id="mob-chart-tab">
     <div class="mob-chart-box">
       <div class="mob-chart-controls">
-        <select class="mob-dd-select" id="mob-interval-select" onchange="setMobInterval(this.value)">
-          <optgroup label="Minutes">
-            <option value="1m" disabled>1m</option>
-            <option value="3m" disabled>3m</option>
-            <option value="5m" disabled>5m</option>
-            <option value="15m" disabled>15m</option>
-            <option value="30m" disabled>30m</option>
-            <option value="45m" disabled>45m</option>
-          </optgroup>
-          <optgroup label="Hours">
-            <option value="1h" disabled>1h</option>
-            <option value="2h" disabled>2h</option>
-            <option value="3h" disabled>3h</option>
-            <option value="4h" disabled>4h</option>
-          </optgroup>
-          <optgroup label="Days">
-            <option value="1D" selected>1 Day</option>
-          </optgroup>
-          <optgroup label="Weeks">
-            <option value="1W">1 Week</option>
-          </optgroup>
-          <optgroup label="Months">
-            <option value="1M">1 Month</option>
-          </optgroup>
-        </select>
-        <select class="mob-dd-select" id="mob-ctype-select" onchange="setMobChartType(this.value)">
-          <option value="candles">Candles</option>
-          <option value="hollow">Hollow Candles</option>
-          <option value="bars">Bars</option>
-          <option value="line">Line</option>
-        </select>
+        <!-- Interval pill -->
+        <button class="mob-filter-btn" onclick="openMobSheet('interval')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <span id="mob-interval-label">1 Day</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <!-- Chart type pill -->
+        <button class="mob-filter-btn" onclick="openMobSheet('ctype')">
+          <svg width="13" height="13" id="mob-ctype-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 21l6-6 4 4 8-8"/>
+          </svg>
+          <span id="mob-ctype-label">Candles</span>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <!-- Indicators pill -->
+        <button class="mob-filter-btn mob-filter-btn-dim" style="flex:0 0 auto" onclick="openMobSheet('indicators')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 20V10M12 20V4M6 20v-6"/>
+          </svg>
+          <span>Indicators</span>
+        </button>
+      </div>
+      <!-- SL / TP overlay bar -->
+      <div class="mob-sl-tp-bar" id="mob-sl-tp-bar" style="display:none">
+        <div class="mob-sl-badge" id="mob-sl-badge">SL —</div>
+        <div class="mob-tp-badge" id="mob-tp-badge">TP —</div>
+        <div class="mob-rr-badge" id="mob-rr-badge">R:R —</div>
       </div>
       <canvas id="mob-canvas"></canvas>
     </div>
@@ -1636,26 +1683,60 @@
     <div class="mob-error-box" id="mob-error-box" style="display:none"></div>
   </div>
 
-  <!-- Watch tab -->
-  <div class="mob-tab-content" id="mob-watch-tab" style="display:none">
-    <div id="mob-watch-list"><div class="mob-empty">Nothing on watch yet.<br>Star an analysis from History.</div></div>
-  </div>
-
-  <!-- P&L tab -->
-  <div class="mob-tab-content" id="mob-pnl-tab" style="display:none">
-    <div id="mob-pnl-body"><div class="mob-empty">No trades logged yet.</div></div>
-  </div>
-
-  <!-- History tab -->
+  <!-- History tab (includes watchlist toggle) -->
   <div class="mob-tab-content" id="mob-history-tab" style="display:none">
-    <div class="mob-hsearch">
+    <div class="mob-hsearch" style="display:flex;gap:8px;align-items:center">
       <input type="text" placeholder="Search ticker…" id="mob-hsearch-input"
-             oninput="filterMobHistory(this.value)" />
+             oninput="filterMobHistory(this.value)" style="flex:1" />
+      <button id="mob-wl-toggle" onclick="toggleMobWatchlist()"
+        style="flex-shrink:0;padding:7px 11px;border-radius:8px;border:1px solid rgba(210,153,34,0.4);background:rgba(210,153,34,0.08);color:#d29922;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">
+        ☆ Watchlist
+      </button>
     </div>
     <div id="mob-hlist"><div class="mob-empty">No saved analyses yet.</div></div>
   </div>
 
   <button id="mob-explain-fab" onclick="triggerExplain()">💡 Explain</button>
+
+  <!-- Bottom sheet overlay -->
+  <div class="mob-bs-overlay" id="mob-bs-overlay" onclick="closeMobSheet()" style="display:none"></div>
+
+  <!-- Interval bottom sheet -->
+  <div class="mob-bs-panel" id="mob-bs-interval" style="display:none">
+    <div class="mob-bs-handle"></div>
+    <div class="mob-bs-title">Time Interval</div>
+    <div class="mob-bs-list">
+      <button class="mob-bs-item active" id="mob-bsi-1D" onclick="setMobInterval('1D')">
+        <span>1 Day</span><span class="check" id="mob-bsi-check-1D">✓</span>
+      </button>
+      <button class="mob-bs-item" id="mob-bsi-1W" onclick="setMobInterval('1W')">
+        <span>1 Week</span><span class="check" id="mob-bsi-check-1W" style="display:none">✓</span>
+      </button>
+      <button class="mob-bs-item" id="mob-bsi-1M" onclick="setMobInterval('1M')">
+        <span>1 Month</span><span class="check" id="mob-bsi-check-1M" style="display:none">✓</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Chart type bottom sheet -->
+  <div class="mob-bs-panel" id="mob-bs-ctype" style="display:none">
+    <div class="mob-bs-handle"></div>
+    <div class="mob-bs-title">Chart Type</div>
+    <div class="mob-bs-list">
+      <button class="mob-bs-item active" id="mob-bsc-candles" onclick="setMobChartType('candles')">
+        <span>Candles</span><span class="check" id="mob-bsc-check-candles">✓</span>
+      </button>
+      <button class="mob-bs-item" id="mob-bsc-line" onclick="setMobChartType('line')">
+        <span>Line</span><span class="check" id="mob-bsc-check-line" style="display:none">✓</span>
+      </button>
+      <button class="mob-bs-item" id="mob-bsc-bars" onclick="setMobChartType('bars')">
+        <span>Bars</span><span class="check" id="mob-bsc-check-bars" style="display:none">✓</span>
+      </button>
+      <button class="mob-bs-item" id="mob-bsc-hollow" onclick="setMobChartType('hollow')">
+        <span>Hollow Candles</span><span class="check" id="mob-bsc-check-hollow" style="display:none">✓</span>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- ══ TABLET VIEW (769px – 1180px) ══ -->
@@ -2677,13 +2758,11 @@ function closeExplain() {
 let mobHistoryCache = [];
 
 function setMobTab(tab) {
-  ["chart","analysis","watch","pnl","history"].forEach(t => {
+  ["chart","analysis","history"].forEach(t => {
     document.getElementById(`mob-${t}-tab`).style.display = t === tab ? "block" : "none";
     document.getElementById(`mob-tab-${t}`).classList.toggle("active", t === tab);
   });
   if (tab === "history") loadMobHistory();
-  if (tab === "watch")   loadMobWatch();
-  if (tab === "pnl")     loadMobPnl();
 }
 
 // ── Watch tab: proximity-sorted watchlist ─────────────────────────────────────
@@ -2844,6 +2923,38 @@ let mobPriceData = null;
 let mobChartType = "candles";
 let mobInterval  = "1D";
 let mobTouchIdx  = null;
+let mobSL = null, mobTP = null;
+
+function updateMobSlTp() {
+  const bar = document.getElementById("mob-sl-tp-bar");
+  if (!bar) return;
+  if (!mobSL && !mobTP) { bar.style.display = "none"; return; }
+  bar.style.display = "flex";
+  const price = mobPriceData ? mobPriceData[mobPriceData.length - 1].close : null;
+  const slEl = document.getElementById("mob-sl-badge");
+  const tpEl = document.getElementById("mob-tp-badge");
+  const rrEl = document.getElementById("mob-rr-badge");
+  if (slEl && mobSL) {
+    const pct = price ? (((mobSL - price) / price) * 100).toFixed(1) : null;
+    slEl.textContent = `SL $${mobSL}${pct ? "  " + pct + "%" : ""}`;
+  }
+  if (tpEl && mobTP) {
+    const pct = price ? (((mobTP - price) / price) * 100).toFixed(1) : null;
+    tpEl.textContent = `TP $${mobTP}${pct ? "  +" + Math.abs(parseFloat(pct)).toFixed(1) + "%" : ""}`;
+  }
+  if (rrEl && mobSL && mobTP && price) {
+    const risk = Math.abs(price - mobSL), reward = Math.abs(mobTP - price);
+    rrEl.textContent = risk > 0 ? `R:R 1:${(reward / risk).toFixed(1)}` : "R:R —";
+  } else if (rrEl) { rrEl.textContent = "R:R —"; }
+}
+
+function setMobSlTpFromText(text) {
+  const setup = extract(text, "TRADE SETUP");
+  if (!setup) { mobSL = null; mobTP = null; updateMobSlTp(); return; }
+  mobSL = _firstPrice(_parseStop(setup)) || null;
+  mobTP = _firstPrice((setup.match(/Target[:\s]+([^\n]+)/i) || [])[1]) || null;
+  updateMobSlTp();
+}
 
 function getMobData() {
   if (!mobPriceData) return null;
@@ -2864,19 +2975,108 @@ async function fetchMobPrice(ticker) {
     mobPriceData = data.last_30_candles;
     mobTouchIdx = null;
     updateMobStats(data);
+    updateMobSlTp();
     renderMobCanvas();
   } catch (e) { console.warn("price fetch", e); }
+}
+
+// ── Bottom sheet open / close ─────────────────────────────────────────────────
+let _mobSheet = null;
+function openMobSheet(name) {
+  closeMobSheet();
+  const ids = { interval: "mob-bs-interval", ctype: "mob-bs-ctype" };
+  if (!ids[name]) return;
+  _mobSheet = name;
+  document.getElementById("mob-bs-overlay").style.display = "block";
+  const panel = document.getElementById(ids[name]);
+  panel.style.display = "block";
+  requestAnimationFrame(() => requestAnimationFrame(() => panel.classList.add("open")));
+}
+function closeMobSheet() {
+  if (!_mobSheet) return;
+  const ids = { interval: "mob-bs-interval", ctype: "mob-bs-ctype" };
+  const panel = document.getElementById(ids[_mobSheet]);
+  if (panel) { panel.classList.remove("open"); setTimeout(() => { panel.style.display = "none"; }, 220); }
+  document.getElementById("mob-bs-overlay").style.display = "none";
+  _mobSheet = null;
 }
 
 function setMobInterval(value) {
   mobInterval = value;
   mobTouchIdx = null;
+  const labels = { "1D":"1 Day","1W":"1 Week","1M":"1 Month" };
+  const lbl = document.getElementById("mob-interval-label");
+  if (lbl) lbl.textContent = labels[value] || value;
+  ["1D","1W","1M"].forEach(v => {
+    const el = document.getElementById(`mob-bsi-check-${v}`);
+    if (el) el.style.display = v === value ? "inline" : "none";
+  });
+  closeMobSheet();
   renderMobCanvas();
 }
 
 function setMobChartType(type) {
   mobChartType = type;
+  const labels = { candles:"Candles", hollow:"Hollow Candles", bars:"Bars", line:"Line" };
+  const lbl = document.getElementById("mob-ctype-label");
+  if (lbl) lbl.textContent = labels[type] || type;
+  ["candles","hollow","bars","line"].forEach(v => {
+    const el = document.getElementById(`mob-bsc-check-${v}`);
+    if (el) el.style.display = v === type ? "inline" : "none";
+  });
+  closeMobSheet();
   renderMobCanvas();
+}
+
+// ── Watchlist toggle inside History tab ───────────────────────────────────────
+let _mobWlMode = false;
+function toggleMobWatchlist() {
+  _mobWlMode = !_mobWlMode;
+  const btn = document.getElementById("mob-wl-toggle");
+  if (btn) {
+    btn.style.background = _mobWlMode ? "rgba(210,153,34,0.2)" : "rgba(210,153,34,0.08)";
+    btn.textContent = _mobWlMode ? "★ Watchlist" : "☆ Watchlist";
+  }
+  if (_mobWlMode) {
+    renderMobWatchInHistory();
+  } else {
+    renderMobHistory(mobHistoryCache || []);
+  }
+}
+async function renderMobWatchInHistory() {
+  const list = document.getElementById("mob-hlist");
+  list.innerHTML = '<div class="mob-empty">Loading…</div>';
+  try {
+    const wl = await (await fetch(`${API_BASE}/watchlist`)).json();
+    if (!wl.length) { list.innerHTML = '<div class="mob-empty">Nothing on your watchlist yet.<br>Run an analysis and tap "I took this trade".</div>'; return; }
+    const tickers = [...new Set(wl.map(i => i.ticker))];
+    const prices = {};
+    await Promise.all(tickers.map(async t => {
+      try { prices[t] = (await (await fetch(`${API_BASE}/price/${t}`)).json()).current_price; }
+      catch { prices[t] = null; }
+    }));
+    list.innerHTML = wl.map(i => {
+      const px = prices[i.ticker];
+      const chg = (px && i.entry_price) ? (((px - i.entry_price) / i.entry_price) * 100) : null;
+      const pos = chg === null || chg >= 0;
+      const pct = chg !== null ? `${pos?"+":""}${chg.toFixed(2)}%` : "—";
+      const slRow = i.stop_loss ? `<div style="display:flex;gap:6px;margin-top:6px">
+        <span style="padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(248,81,73,0.15);border:1px solid rgba(248,81,73,0.3);color:#f85149">SL $${i.stop_loss}</span>
+        ${i.target ? `<span style="padding:3px 8px;border-radius:5px;font-size:11px;font-weight:700;background:rgba(63,185,80,0.15);border:1px solid rgba(63,185,80,0.3);color:#3fb950">TP $${i.target}</span>` : ""}
+      </div>` : "";
+      return `<div class="mob-hitem" onclick="loadMobFromHistory(0,'${i.ticker}')">
+        <div class="mob-hitem-left">
+          <div class="mob-hitem-ticker">★ ${i.ticker}</div>
+          <div class="mob-hitem-date">Entry $${i.entry_price || "—"}</div>
+          ${slRow}
+        </div>
+        <div class="mob-hitem-right">
+          <div class="mob-hitem-pct ${pos?"mob-pos":"mob-neg"}">${px ? "$"+px : "—"}</div>
+          <div class="mob-hitem-chg ${pos?"mob-pos":"mob-neg"}">${pct}</div>
+        </div>
+      </div>`;
+    }).join("");
+  } catch { list.innerHTML = '<div class="mob-empty">Error loading watchlist.</div>'; }
 }
 
 // ── Tina Logan Candlestick Knowledge Base ─────────────────
@@ -3223,6 +3423,22 @@ function renderMobCanvas() {
     });
     ctx.setLineDash([]);
   }
+
+  // SL / TP dashed lines
+  ctx.font = "9px -apple-system,sans-serif"; ctx.textAlign = "left";
+  if (mobSL && mobSL >= pMin && mobSL <= pMax) {
+    const y = pY(mobSL);
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = "rgba(248,81,73,0.7)"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R - 2, y); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = "#f85149"; ctx.fillText("SL", W - PAD_R + 2, y + 3);
+  }
+  if (mobTP && mobTP >= pMin && mobTP <= pMax) {
+    const y = pY(mobTP);
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = "rgba(63,185,80,0.7)"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R - 2, y); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = "#3fb950"; ctx.fillText("TP", W - PAD_R + 2, y + 3);
+  }
+  ctx.setLineDash([]);
 
   // Crosshair tooltip on touch
   if (mobTouchIdx !== null) {
@@ -3854,6 +4070,7 @@ function showMobAnalysisDone(text) {
     document.getElementById("mob-verdict-row").style.display = "block";
   }
   document.getElementById("mob-cards").innerHTML = buildMobCards(text);
+  setMobSlTpFromText(text);
 }
 
 // Default-on-open: show the last saved analysis, flagged with today's date.
