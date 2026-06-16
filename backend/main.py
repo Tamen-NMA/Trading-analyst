@@ -447,18 +447,26 @@ def get_price_data(ticker: str) -> dict:
             "volume": int(row["Volume"]),
         })
 
-    # Float shares and 3-month avg volume from stock.info (best-effort)
+    # Extra fields from stock.info (best-effort — network call, may fail)
     float_shares = None
     avg_3m_volume = None
+    market_cap = None
+    pe_ratio = None
+    exchange = None
     try:
         info = stock.info
-        float_shares = info.get("floatShares")
+        float_shares  = info.get("floatShares")
         avg_3m_volume = info.get("averageDailyVolume3Month") or info.get("averageVolume")
+        market_cap    = info.get("marketCap")
+        pe_ratio      = info.get("trailingPE") or info.get("forwardPE")
+        exchange      = info.get("exchange") or info.get("fullExchangeName")
     except Exception:
         pass
 
+    last = hist.iloc[-1]
     return {
         "ticker": ticker,
+        "exchange": exchange,
         "current_price": safe_round(cur["Close"]),
         "daily_change_pct": safe_round(((cur["Close"] - prev["Close"]) / prev["Close"]) * 100),
         "52w_high": safe_round(hist["High"].max()),
@@ -470,11 +478,16 @@ def get_price_data(ticker: str) -> dict:
         "price_vs_ma20": "above" if cur["Close"] > hist["MA20"].iloc[-1] else "below",
         "price_vs_ma50": "above" if cur["Close"] > hist["MA50"].iloc[-1] else "below",
         "price_vs_ma200": "above" if cur["Close"] > hist["MA200"].iloc[-1] else "below",
+        "today_open": safe_round(last["Open"]),
+        "today_high": safe_round(last["High"]),
+        "today_low": safe_round(last["Low"]),
         "today_volume": int(cur["Volume"]),
         "avg_20d_volume": int(avg_vol),
         "volume_ratio": f"{vol_ratio:.1f}x avg",
         "float_shares": int(float_shares) if float_shares else None,
         "avg_3m_volume": int(avg_3m_volume) if avg_3m_volume else None,
+        "market_cap": int(market_cap) if market_cap else None,
+        "pe_ratio": safe_round(pe_ratio, 1) if pe_ratio else None,
         "last_30_candles": candles,
     }
 

@@ -985,6 +985,41 @@
   .mw-chip.stop b  { color: #f85149; }
   .mw-chip.tgt b   { color: #3fb950; }
 
+  /* ── Quote widget (Analysis tab) ── */
+  #mob-quote-widget {
+    background: rgba(15,23,42,0.8);
+    border: 1px solid rgba(88,166,255,0.25);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .mq-header { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:4px; }
+  .mq-ticker { font-size:15px; font-weight:800; color:#e6edf3; margin-right:6px; }
+  .mq-meta { font-size:11px; color:#6e7681; }
+  .mq-price-block { text-align:right; }
+  .mq-price { font-size:16px; font-weight:800; color:#e6edf3; }
+  .mq-chg-pos { font-size:11px; font-weight:600; color:#3fb950; }
+  .mq-chg-neg { font-size:11px; font-weight:600; color:#f85149; }
+  .mq-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-bottom:8px; }
+  .mq-cell { background:rgba(255,255,255,0.05); border-radius:8px; padding:7px 8px; text-align:center; }
+  .mq-cell-label { font-size:9px; font-weight:700; color:#6e7681; text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+  .mq-cell-val { font-size:12px; font-weight:700; color:#e6edf3; }
+  .mq-cell-val.hi { color:#3fb950; }
+  .mq-cell-val.lo { color:#f85149; }
+  .mq-range-row { display:flex; align-items:center; justify-content:space-between; font-size:10px; color:#6e7681; margin-bottom:4px; }
+  .mq-range-label { font-size:10px; font-weight:600; color:#8b949e; }
+  .mq-range-vals { font-size:10px; color:#8b949e; }
+  .mq-range-track {
+    height:4px; border-radius:2px; margin:4px 0;
+    background: linear-gradient(to right, #f85149, #3fb950);
+    position:relative;
+  }
+  .mq-range-dot {
+    position:absolute; top:50%; transform:translate(-50%,-50%);
+    width:8px; height:8px; border-radius:50%;
+    background:#fff; border:1.5px solid rgba(255,255,255,0.8);
+    box-shadow:0 0 4px rgba(0,0,0,0.6);
+  }
   /* ── P&L tab ── */
   .pnl-hero {
     background: rgba(255,255,255,0.04);
@@ -1659,6 +1694,39 @@
 
   <!-- Analysis tab -->
   <div class="mob-tab-content" id="mob-analysis-tab" style="display:none">
+
+    <!-- Quote widget: always shown when price data is available -->
+    <div id="mob-quote-widget" style="display:none">
+      <div class="mq-header">
+        <div>
+          <span class="mq-ticker" id="mq-ticker">—</span>
+          <span class="mq-meta" id="mq-meta">—</span>
+        </div>
+        <div class="mq-price-block">
+          <div class="mq-price" id="mq-price">—</div>
+          <div id="mq-chg">—</div>
+        </div>
+      </div>
+      <div class="mq-grid">
+        <div class="mq-cell"><div class="mq-cell-label">O</div><div class="mq-cell-val" id="mq-open">—</div></div>
+        <div class="mq-cell"><div class="mq-cell-label">H</div><div class="mq-cell-val hi" id="mq-high">—</div></div>
+        <div class="mq-cell"><div class="mq-cell-label">L</div><div class="mq-cell-val lo" id="mq-low">—</div></div>
+        <div class="mq-cell"><div class="mq-cell-label">C</div><div class="mq-cell-val" id="mq-close">—</div></div>
+      </div>
+      <div class="mq-grid">
+        <div class="mq-cell"><div class="mq-cell-label">Volume</div><div class="mq-cell-val" id="mq-vol">—</div></div>
+        <div class="mq-cell"><div class="mq-cell-label">Avg Vol</div><div class="mq-cell-val" id="mq-avgvol">—</div></div>
+        <div class="mq-cell"><div class="mq-cell-label">Mkt Cap</div><div class="mq-cell-val" id="mq-mktcap">—</div></div>
+        <div class="mq-cell"><div class="mq-cell-label">P/E</div><div class="mq-cell-val" id="mq-pe">—</div></div>
+      </div>
+      <div>
+        <div class="mq-range-row">
+          <span class="mq-range-label">Day Range</span>
+          <span class="mq-range-vals" id="mq-range-vals">—</span>
+        </div>
+        <div class="mq-range-track"><div class="mq-range-dot" id="mq-range-dot" style="left:50%"></div></div>
+      </div>
+    </div>
 
     <!-- Placeholder -->
     <div class="mob-a-placeholder" id="mob-a-placeholder">
@@ -3949,7 +4017,50 @@ function formatBig(n) {
   return n.toString();
 }
 
+function renderMobQuoteWidget(data) {
+  const w = document.getElementById("mob-quote-widget");
+  if (!w || data.current_price == null) return;
+  const chg = data.daily_change_pct || 0;
+  const chgDollar = ((data.current_price * chg) / 100).toFixed(2);
+  const pos = chg >= 0;
+
+  // Header
+  document.getElementById("mq-ticker").textContent = data.ticker || "—";
+  const d = new Date();
+  const exch = data.exchange || "";
+  document.getElementById("mq-meta").textContent =
+    `${exch ? exch + " · " : ""}${d.toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"})}`;
+  document.getElementById("mq-price").textContent = `$${data.current_price}`;
+  const chgEl = document.getElementById("mq-chg");
+  chgEl.textContent = `${pos ? "+" : ""}$${Math.abs(chgDollar)} (${pos ? "+" : ""}${chg}%)`;
+  chgEl.className = pos ? "mq-chg-pos" : "mq-chg-neg";
+
+  // OHLC from last candle
+  const last = data.last_30_candles?.[data.last_30_candles.length - 1];
+  document.getElementById("mq-open").textContent  = last ? last.open  : "—";
+  document.getElementById("mq-high").textContent  = last ? last.high  : "—";
+  document.getElementById("mq-low").textContent   = last ? last.low   : "—";
+  document.getElementById("mq-close").textContent = last ? last.close : "—";
+
+  // Stats
+  document.getElementById("mq-vol").textContent    = formatBig(data.today_volume);
+  document.getElementById("mq-avgvol").textContent = formatBig(data.avg_20d_volume || data.avg_3m_volume);
+  document.getElementById("mq-mktcap").textContent = formatBig(data.market_cap) || "—";
+  document.getElementById("mq-pe").textContent     = data.pe_ratio != null ? data.pe_ratio : "—";
+
+  // Day range bar
+  if (last) {
+    const lo = last.low, hi = last.high, px = data.current_price;
+    const pct = hi > lo ? ((px - lo) / (hi - lo)) * 100 : 50;
+    document.getElementById("mq-range-vals").textContent = `$${lo} — $${hi}`;
+    document.getElementById("mq-range-dot").style.left = `${Math.max(2, Math.min(98, pct))}%`;
+  }
+
+  w.style.display = "block";
+}
+
 function updateMobStats(data) {
+  renderMobQuoteWidget(data);
   document.getElementById("mob-price-row").style.display = "flex";
   document.getElementById("mob-price").textContent = `$${data.current_price}`;
   const chg = data.daily_change_pct;
