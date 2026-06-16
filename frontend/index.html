@@ -916,11 +916,38 @@
   #mob-summary-view { display:none; }
   .mob-verdict-row { padding: 0 0 12px; }
 
-  /* Trade plan divider above entry/exit/R-R rows */
-  .mob-trade-divider {
-    font-size:10px; font-weight:700; color:#58a6ff; text-transform:uppercase;
-    letter-spacing:.8px; margin:14px 0 8px; padding-bottom:4px;
-    border-bottom:1px solid rgba(88,166,255,0.2);
+  /* Trade plan unified card */
+  .mob-trade-plan {
+    background: rgba(13,17,23,0.85);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    overflow: hidden;
+    margin: 10px 0;
+  }
+  .mob-tp-header {
+    padding: 10px 14px 9px;
+    font-size: 11px; font-weight: 700; color: #58a6ff;
+    letter-spacing: 0.8px; text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    background: rgba(88,166,255,0.04);
+  }
+  .mob-tp-section {
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .mob-tp-section:last-child { border-bottom: none; }
+  .mob-tp-section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.6px;
+    text-transform: uppercase; margin-bottom: 5px;
+  }
+  .mob-tp-section.entry .mob-tp-section-label { color: #d29922; }
+  .mob-tp-section.exit  .mob-tp-section-label { color: #f85149; }
+  .mob-tp-section.rr    .mob-tp-section-label { color: #8b949e; }
+  .mob-tp-section.rr.bull .mob-tp-section-label { color: #3fb950; }
+  .mob-tp-section.rr.warn .mob-tp-section-label { color: #d29922; }
+  .mob-tp-section.rr.bear .mob-tp-section-label { color: #f85149; }
+  .mob-tp-section-val {
+    font-size: 13.5px; color: #e6edf3; line-height: 1.5;
   }
 
   /* ── Watch tab (proximity view) ── */
@@ -1171,6 +1198,12 @@
   .mob-hitem-right { text-align:right; flex-shrink:0; }
   .mob-hitem-pct { font-size:14px; font-weight:700; margin-bottom:2px; }
   .mob-hitem-chg { font-size:11px; }
+  .mob-hitem-star {
+    flex-shrink:0; background:none; border:none; font-size:19px; padding:0 10px;
+    cursor:pointer; color:rgba(255,255,255,0.22); line-height:1; align-self:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .mob-hitem-star.starred { color:#d29922; }
   .mob-empty { color:#6e7681; font-size:13px; padding:48px 16px; text-align:center; }
 
   /* ── Candle Intel Panel (Tina Logan KB) ── */
@@ -4105,48 +4138,6 @@ function buildMobCards(text) {
     </div>`;
   }).join("");
 
-  // Entry / Exit / Risk-Reward as highlighted kp-rows (same conditional colours as desktop)
-  const setup = extract(text, "TRADE SETUP");
-  let tradeRows = "";
-
-  if (setup) {
-    const entry = _parseEntry(setup);
-    const stop  = _parseStop(setup);
-    if (entry) tradeRows += `<div class="kp-row entry">
-      <div class="kp-icon">🎯</div>
-      <div class="kp-text">
-        <div class="kp-label">Entry Trigger — wait for this</div>
-        <div class="kp-value">${entry}</div>
-      </div>
-    </div>`;
-    if (stop) tradeRows += `<div class="kp-row exit">
-      <div class="kp-icon">🛑</div>
-      <div class="kp-text">
-        <div class="kp-label">Exit / Stop Loss — if breached, close immediately</div>
-        <div class="kp-value">${stop}</div>
-      </div>
-    </div>`;
-  }
-
-  const rrMatch = setup ? setup.match(/Risk[\s\/\-]*Reward[^:]*:\s*([^\n]+)/i) : null;
-  if (rrMatch) {
-    const rrRaw    = rrMatch[1].replace(/\*+/g, "").trim();
-    const numMatch = rrRaw.match(/(\d+\.?\d*)\s*[:x]/i);
-    const ratio    = numMatch ? parseFloat(numMatch[1]) : null;
-    const cls  = ratio === null ? "muted" : ratio >= 2 ? "bull" : ratio >= 1 ? "warn" : "bear";
-    const icon = cls === "bull" ? "💰" : cls === "warn" ? "⚖️" : "⚠️";
-    const desc = ratio !== null
-      ? `${rrRaw} — ${ratio >= 2 ? "Favourable" : ratio >= 1 ? "Marginal — wait for better setup" : "Poor — do not take this trade"}`
-      : rrRaw;
-    tradeRows += `<div class="kp-row ${cls}">
-      <div class="kp-icon">${icon}</div>
-      <div class="kp-text">
-        <div class="kp-label">Risk / Reward</div>
-        <div class="kp-value">${desc}</div>
-      </div>
-    </div>`;
-  }
-
   // McAllen discipline: NEUTRAL verdict = no entry card at all. Stay out is the default.
   const verdictMatch = text.match(/\*\*VERDICT:\*\*\s*(BULLISH|BEARISH|NEUTRAL)/i);
   const verdict = verdictMatch ? verdictMatch[1].toUpperCase() : null;
@@ -4156,26 +4147,59 @@ function buildMobCards(text) {
     return html;
   }
 
-  if (tradeRows) {
-    html += `<div class="mob-trade-divider">⚡ Trade Plan</div>${tradeRows}`;
+  // Entry / Exit / Risk-Reward as unified trade plan card
+  const setup = extract(text, "TRADE SETUP");
+  if (setup) {
+    const entry = _parseEntry(setup);
+    const stop  = _parseStop(setup);
 
-    // Position sizing — risk 1% of account between entry and stop
-    const entryNum = _firstPrice(_parseEntry(setup));
-    const stopNum  = _firstPrice(_parseStop(setup));
-    if (entryNum && stopNum && entryNum > stopNum) {
-      const shares = Math.floor((_accountSize * 0.01) / (entryNum - stopNum));
-      const cost = Math.round(shares * entryNum);
-      html += `<div class="kp-row info">
-        <div class="kp-icon">🧮</div>
-        <div class="kp-text">
-          <div class="kp-label">Position size — 1% risk rule</div>
-          <div class="kp-value">${shares} shares (~$${cost.toLocaleString()}) · max loss $${Math.round(_accountSize * 0.01)} at your stop</div>
-        </div>
+    let planSections = "";
+    if (entry) planSections += `<div class="mob-tp-section entry">
+      <div class="mob-tp-section-label">🎯 Entry Trigger — wait for this</div>
+      <div class="mob-tp-section-val">${entry}</div>
+    </div>`;
+    if (stop) planSections += `<div class="mob-tp-section exit">
+      <div class="mob-tp-section-label">🛑 Exit / Stop Loss — if breached, close immediately</div>
+      <div class="mob-tp-section-val">${stop}</div>
+    </div>`;
+
+    const rrMatch = setup.match(/Risk[\s\/\-]*Reward[^:]*:\s*([^\n]+)/i);
+    if (rrMatch) {
+      const rrRaw    = rrMatch[1].replace(/\*+/g, "").trim();
+      const numMatch = rrRaw.match(/(\d+\.?\d*)\s*[:x]/i);
+      const ratio    = numMatch ? parseFloat(numMatch[1]) : null;
+      const rrCls    = ratio === null ? "muted" : ratio >= 2 ? "bull" : ratio >= 1 ? "warn" : "bear";
+      const rrIcon   = rrCls === "bull" ? "💰" : rrCls === "warn" ? "⚖️" : "⚠️";
+      const rrDesc   = ratio !== null
+        ? `${rrRaw} — ${ratio >= 2 ? "Favourable" : ratio >= 1 ? "Marginal — wait for better setup" : "Poor — do not take this trade"}`
+        : rrRaw;
+      planSections += `<div class="mob-tp-section rr ${rrCls}">
+        <div class="mob-tp-section-label">${rrIcon} Risk / Reward</div>
+        <div class="mob-tp-section-val">${rrDesc}</div>
       </div>`;
-      const tk = (document.getElementById("mob-ticker")?.value || "").toUpperCase().trim();
-      const tgtNum = _firstPrice((setup.match(/Target[:\s]+([^\n]+)/i) || [])[1]);
-      if (tk && verdict === "BULLISH") {
-        html += `<button class="mob-take-btn" onclick="mobTakeTrade(this, '${tk}', ${entryNum}, ${stopNum || "null"}, ${tgtNum || "null"}, ${shares})">✓ I took this trade</button>`;
+    }
+
+    if (planSections) {
+      html += `<div class="mob-trade-plan"><div class="mob-tp-header">⚡ Trade Plan</div>${planSections}</div>`;
+
+      // Position sizing — risk 1% of account between entry and stop
+      const entryNum = _firstPrice(entry);
+      const stopNum  = _firstPrice(stop);
+      if (entryNum && stopNum && entryNum > stopNum) {
+        const shares = Math.floor((_accountSize * 0.01) / (entryNum - stopNum));
+        const cost = Math.round(shares * entryNum);
+        html += `<div class="kp-row info">
+          <div class="kp-icon">🧮</div>
+          <div class="kp-text">
+            <div class="kp-label">Position size — 1% risk rule</div>
+            <div class="kp-value">${shares} shares (~$${cost.toLocaleString()}) · max loss $${Math.round(_accountSize * 0.01)} at your stop</div>
+          </div>
+        </div>`;
+        const tk = (document.getElementById("mob-ticker")?.value || "").toUpperCase().trim();
+        const tgtNum = _firstPrice((setup.match(/Target[:\s]+([^\n]+)/i) || [])[1]);
+        if (tk && verdict === "BULLISH") {
+          html += `<button class="mob-take-btn" onclick="mobTakeTrade(this, '${tk}', ${entryNum}, ${stopNum || "null"}, ${tgtNum || "null"}, ${shares})">✓ I took this trade</button>`;
+        }
       }
     }
   }
@@ -4230,8 +4254,12 @@ function runMobAnalysis() {
 
 async function loadMobHistory() {
   try {
-    const res = await fetch(`${API_BASE}/history`);
-    mobHistoryCache = await res.json();
+    const [histRes, wlRes] = await Promise.all([
+      fetch(`${API_BASE}/history`),
+      fetch(`${API_BASE}/watchlist`),
+    ]);
+    mobHistoryCache = await histRes.json();
+    watchlistCache  = await wlRes.json();
     renderMobHistory(mobHistoryCache);
   } catch {
     document.getElementById("mob-hlist").innerHTML = '<div class="mob-empty">Error loading history.</div>';
@@ -4246,22 +4274,51 @@ function filterMobHistory(q) {
 function renderMobHistory(items) {
   const list = document.getElementById("mob-hlist");
   if (!items.length) { list.innerHTML = '<div class="mob-empty">No results found.</div>'; return; }
+  const watchedTickers = new Set((watchlistCache || []).map(w => w.ticker));
   list.innerHTML = items.map(item => {
     const chg = item.daily_change;
     const pos = chg === null || chg >= 0;
     const pct  = chg !== null ? `${pos ? "+" : ""}${chg.toFixed(2)}%` : "—";
     const usd  = item.price && chg !== null ? `${pos ? "+" : ""}$${Math.abs(chg).toFixed(2)}` : "";
+    const isWatched = watchedTickers.has(item.ticker);
     return `<div class="mob-hitem" onclick="loadMobFromHistory(${item.id},'${item.ticker}')">
       <div class="mob-hitem-left">
         <div class="mob-hitem-ticker">${item.ticker}</div>
         <div class="mob-hitem-date">${item.searched_at}</div>
       </div>
+      <button class="mob-hitem-star${isWatched ? " starred" : ""}"
+        onclick="event.stopPropagation(); toggleMobHistoryStar('${item.ticker}', this)"
+        title="${isWatched ? "Remove from watchlist" : "Add to watchlist"}">
+        ${isWatched ? "★" : "☆"}
+      </button>
       <div class="mob-hitem-right">
         <div class="mob-hitem-pct ${pos ? "mob-pos" : "mob-neg"}">${pct}</div>
         <div class="mob-hitem-chg ${pos ? "mob-pos" : "mob-neg"}">${usd}</div>
       </div>
     </div>`;
   }).join("");
+}
+
+async function toggleMobHistoryStar(ticker, btn) {
+  const wl = (watchlistCache || []).find(w => w.ticker === ticker);
+  if (wl) {
+    await fetch(`${API_BASE}/watchlist/${wl.id}`, { method: "DELETE" });
+    watchlistCache = watchlistCache.filter(w => w.id !== wl.id);
+    btn.classList.remove("starred");
+    btn.textContent = "☆";
+    btn.title = "Add to watchlist";
+  } else {
+    const res = await fetch(`${API_BASE}/watchlist`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticker }),
+    });
+    const newItem = await res.json();
+    watchlistCache = [...(watchlistCache || []), { id: newItem.id, ticker }];
+    btn.classList.add("starred");
+    btn.textContent = "★";
+    btn.title = "Remove from watchlist";
+  }
 }
 
 async function loadMobFromHistory(id, ticker) {
