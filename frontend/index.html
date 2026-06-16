@@ -941,6 +941,7 @@
     border-bottom: 1px solid rgba(255,255,255,0.07);
     background: rgba(88,166,255,0.04);
   }
+  .mob-tp-sections { display: flex; flex-direction: column; }
   .mob-tp-section {
     padding: 11px 14px;
     border-bottom: 1px solid rgba(255,255,255,0.06);
@@ -1478,8 +1479,115 @@
   .tab-ind-item.on .tab-switch { background: rgba(63,185,80,0.35); }
   .tab-ind-item.on .tab-switch::after { transform: translateX(15px); background: #3fb950; }
 
-  /* Stats grid (reuses .mob-stat) */
-  .tab-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  /* ── Search row redesign ── */
+  .tab-search-row input {
+    flex: 1; min-width: 0; max-width: none;
+  }
+  .tab-support-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: linear-gradient(135deg,#7d5c00,#b8860b); border: none; border-radius: 10px;
+    color: #fff; cursor: pointer; font-size: 14px; font-weight: 700;
+    padding: 10px 18px; text-decoration: none; white-space: nowrap; transition: opacity .2s;
+  }
+  .tab-support-btn:hover { opacity: .88; }
+
+  /* ── Sidebar header ── */
+  .tab-sidebar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .tab-sidebar-head .tab-section-title { margin-bottom: 0; }
+  .tab-wl-btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 999px; color: #e6edf3; cursor: pointer; font-size: 11.5px; font-weight: 600;
+    padding: 5px 11px; transition: background .15s;
+  }
+  .tab-wl-btn.active { background: rgba(210,153,34,0.15); border-color: rgba(210,153,34,0.4); color: #d29922; }
+  .tab-wl-btn:hover { background: rgba(255,255,255,0.09); }
+
+  /* ── SL/TP bar on tablet chart ── */
+  .tab-sl-tp-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .tab-sl-badge {
+    flex: 1; background: rgba(248,81,73,0.1); border: 1px solid rgba(248,81,73,0.3);
+    border-radius: 8px; color: #f85149; font-size: 12px; font-weight: 700; padding: 7px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .tab-tp-badge {
+    flex: 1; background: rgba(63,185,80,0.1); border: 1px solid rgba(63,185,80,0.3);
+    border-radius: 8px; color: #3fb950; font-size: 12px; font-weight: 700; padding: 7px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .tab-rr-badge {
+    flex-shrink: 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px; color: #8b949e; font-size: 11px; font-weight: 700; padding: 7px 12px;
+    text-align: center; line-height: 1.3;
+  }
+
+  /* ── Quote widget in tablet ── */
+  #tab-quote-widget {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(88,166,255,0.2);
+    border-radius: 14px; padding: 14px 16px; display: none;
+  }
+
+  /* ── Candle intel in tablet ── */
+  #tab-candle-intel {
+    display: none; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px; padding: 12px 14px;
+  }
+
+  /* ── Stats row (horizontal chips) ── */
+  .tab-stats-row {
+    display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none;
+  }
+  .tab-stats-row::-webkit-scrollbar { display: none; }
+  .tab-stat-chip {
+    flex-shrink: 0; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 8px 14px;
+  }
+  .tab-sc-label { font-size: 10px; color: #8b949e; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .4px; }
+  .tab-sc-val { font-size: 13px; font-weight: 700; color: #e6edf3; }
+
+  /* ── Analysis 2-column card grid ── */
+  #tab-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+  #tab-cards > .mob-trade-plan,
+  #tab-cards > .kp-row,
+  #tab-cards > .mob-stayout,
+  #tab-cards > .tab-key-insight,
+  #tab-cards > .mob-take-btn { grid-column: 1 / -1; }
+
+  /* Trade plan 3-column layout on tablet */
+  #tablet-view .mob-tp-sections { display: grid; grid-template-columns: repeat(3, 1fr); }
+  #tablet-view .mob-tp-section { border-bottom: none; border-right: 1px solid rgba(255,255,255,0.06); }
+  #tablet-view .mob-tp-section:last-child { border-right: none; }
+
+  /* Key Insight card */
+  .tab-key-insight {
+    background: linear-gradient(135deg, rgba(31,111,235,0.08), rgba(56,189,248,0.06));
+    border: 1px solid rgba(56,189,248,0.18); border-radius: 14px; padding: 14px 16px;
+  }
+  .tab-ki-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .tab-ki-icon {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: linear-gradient(135deg, #1f6feb, #0e6efd);
+    display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
+  }
+  .tab-ki-title { font-size: 14px; font-weight: 700; color: #e6edf3; }
+  .tab-ki-text { font-size: 13.5px; color: #94a3b8; line-height: 1.55; }
+
+  /* History SL/TP row + star */
+  .tab-hi-star {
+    background: none; border: none; color: rgba(255,255,255,0.25); cursor: pointer;
+    font-size: 16px; padding: 0 2px; line-height: 1; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab-hi-star.starred { color: #d29922; }
+  .tab-hi-sltp { display: flex; gap: 6px; margin-top: 7px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .tab-hi-sl {
+    flex: 1; background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.25);
+    border-radius: 6px; color: #f85149; font-size: 11px; font-weight: 700; padding: 4px 8px; text-align: center;
+  }
+  .tab-hi-tp {
+    flex: 1; background: rgba(63,185,80,0.08); border: 1px solid rgba(63,185,80,0.25);
+    border-radius: 6px; color: #3fb950; font-size: 11px; font-weight: 700; padding: 4px 8px; text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -1874,127 +1982,153 @@
 <!-- ══ TABLET VIEW (769px – 1180px) ══ -->
 <div id="tablet-view">
 
-  <div class="tab-header">
-    <div>
-      <h1 class="tab-title">McAllen <span>Analyst</span></h1>
-      <div class="tab-subtitle" id="tab-subtitle">Enter a ticker to begin</div>
-    </div>
-    <div class="tab-price-block" id="tab-price-block">
-      <div class="tab-price" id="tab-price">$0.00</div>
-      <div class="tab-change" id="tab-change"></div>
-    </div>
-  </div>
-
+  <!-- Header: full-width search bar -->
   <div class="tab-search-row">
     <input id="tab-ticker" type="text" placeholder="Search ticker (e.g., AAPL, MSFT)…" maxlength="10"
            oninput="this.value=this.value.toUpperCase()"
            onkeydown="if(event.key==='Enter') runTabletAnalysis()" />
     <button class="tab-analyze-btn" id="tab-analyze-btn" onclick="runTabletAnalysis()">Analyze</button>
-    <a class="tab-assistant-btn" href="/voice.html">🤖 Assistant</a>
+    <a class="tab-support-btn" href="https://buy.stripe.com/5kQ7sNal2egk4FS8ZgeZ200" target="_blank" rel="noopener">🏆 Support</a>
   </div>
-  <p class="tab-hint">~$1 per analysis · check history first</p>
+  <p class="tab-hint">1 USD per analysis, check the history first</p>
+
+  <!-- Hidden elements kept for JS compatibility -->
+  <div id="tab-subtitle" style="display:none"></div>
+  <div id="tab-price-block" style="display:none"><div id="tab-price"></div><div id="tab-change"></div></div>
+  <div id="tab-chart-type-label" style="display:none"></div>
 
   <div class="tab-body">
     <div class="tab-main">
 
-      <!-- Chart card -->
+      <!-- Chart controls (outside chart card) -->
+      <div class="tab-toolbar" style="position:relative">
+        <div class="tab-tool-btn" onclick="toggleTabletMenu('interval', event)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span id="tab-interval-label">1 Day</span><span class="caret">▾</span>
+        </div>
+        <div class="tab-tool-btn" onclick="toggleTabletMenu('ctype', event)">
+          <span class="tool-icon" id="tab-ctype-icon"></span>
+          <span id="tab-ctype-label">Candles</span><span class="caret">▾</span>
+        </div>
+        <div class="tab-tool-btn" onclick="toggleTabletMenu('indicators', event)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="9" width="3" height="6" rx="0.5"/><rect x="6.5" y="5" width="3" height="10" rx="0.5"/><rect x="12" y="1" width="3" height="14" rx="0.5"/></svg>
+          Indicators
+        </div>
+
+        <!-- Time Intervals dropdown -->
+        <div class="tab-dropdown" id="tab-interval-menu" style="min-width:240px">
+          <div class="tab-ti-head">
+            <span>Time Intervals</span>
+            <button class="tab-ti-close" onclick="closeTabletMenus()">✕</button>
+          </div>
+          <div class="tab-ti-body">
+            <div class="tab-ti-section">Minutes</div>
+            <div class="tab-ti-item disabled">1m</div><div class="tab-ti-item disabled">3m</div>
+            <div class="tab-ti-item disabled">5m</div><div class="tab-ti-item disabled">15m</div>
+            <div class="tab-ti-item disabled">30m</div><div class="tab-ti-item disabled">45m</div>
+            <div class="tab-ti-section">Hours</div>
+            <div class="tab-ti-item disabled">1h</div><div class="tab-ti-item disabled">2h</div>
+            <div class="tab-ti-item disabled">3h</div><div class="tab-ti-item disabled">4h</div>
+            <div class="tab-ti-section">Days</div>
+            <div class="tab-ti-item selected" data-interval="1D" onclick="setTabletInterval('1D','1 Day')">1 Day</div>
+            <div class="tab-ti-section">Weeks</div>
+            <div class="tab-ti-item" data-interval="1W" onclick="setTabletInterval('1W','1 Week')">1 Week</div>
+            <div class="tab-ti-section">Months</div>
+            <div class="tab-ti-item" data-interval="1M" onclick="setTabletInterval('1M','1 Month')">1 Month</div>
+          </div>
+        </div>
+
+        <!-- Chart type dropdown -->
+        <div class="tab-dropdown" id="tab-ctype-menu">
+          <div class="tab-ctype-item" data-type="bars" onclick="setTabletChartType('bars')">
+            <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><line x1="4" y1="2" x2="4" y2="14"/><line x1="4" y1="4" x2="1" y2="4"/><line x1="4" y1="10" x2="7" y2="10"/><line x1="11" y1="2" x2="11" y2="14"/><line x1="11" y1="6" x2="8" y2="6"/><line x1="11" y1="11" x2="14" y2="11"/></svg></span>
+            <span>Bars</span>
+          </div>
+          <div class="tab-ctype-item selected" data-type="candles" onclick="setTabletChartType('candles')">
+            <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16"><line x1="4.5" y1="1" x2="4.5" y2="14" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="3" height="6" rx="0.5" fill="currentColor"/><line x1="11.5" y1="2" x2="11.5" y2="15" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="3" width="3" height="7" rx="0.5" fill="currentColor"/></svg></span>
+            <span>Candles</span>
+          </div>
+          <div class="tab-ctype-item" data-type="hollow" onclick="setTabletChartType('hollow')">
+            <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16"><line x1="4.5" y1="1" x2="4.5" y2="14" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="3" height="6" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="11.5" y1="2" x2="11.5" y2="15" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="3" width="3" height="7" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>
+            <span>Hollow candles</span>
+          </div>
+          <div class="tab-ctype-item" data-type="line" onclick="setTabletChartType('line')">
+            <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,11 5,6 8,9 15,2"/></svg></span>
+            <span>Line</span>
+          </div>
+        </div>
+
+        <!-- Indicators dropdown -->
+        <div class="tab-dropdown" id="tab-indicators-menu">
+          <div class="tab-ind-item on" data-ind="volume" onclick="toggleTabletIndicator('volume')">
+            <span>Volume</span><span class="tab-switch"></span>
+          </div>
+          <div class="tab-ind-item" data-ind="ma50" onclick="toggleTabletIndicator('ma50')">
+            <span>MA (50)</span><span class="tab-switch"></span>
+          </div>
+          <div class="tab-ind-item" data-ind="ma200" onclick="toggleTabletIndicator('ma200')">
+            <span>MA (200)</span><span class="tab-switch"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart card (no header, just SL/TP bar + canvas) -->
       <div class="tab-chart-card">
-        <div class="tab-chart-head">
-          <span>1D Chart</span>
-          <span class="tab-chart-type-label" id="tab-chart-type-label">Candlestick</span>
+        <div class="tab-sl-tp-bar" id="tab-sl-tp-bar" style="display:none">
+          <div class="tab-sl-badge" id="tab-sl-badge">SL —</div>
+          <div class="tab-tp-badge" id="tab-tp-badge">TP —</div>
+          <div class="tab-rr-badge" id="tab-rr-badge">R:R —</div>
         </div>
-
-        <div class="tab-toolbar">
-          <!-- Time interval -->
-          <div class="tab-tool-btn" onclick="toggleTabletMenu('interval', event)">
-            <span id="tab-interval-label">1 Day</span><span class="caret">▾</span>
-          </div>
-          <!-- Chart type -->
-          <div class="tab-tool-btn" onclick="toggleTabletMenu('ctype', event)">
-            <span class="tool-icon" id="tab-ctype-icon"></span>
-            <span id="tab-ctype-label">Candles</span><span class="caret">▾</span>
-          </div>
-          <!-- Indicators -->
-          <div class="tab-tool-btn" onclick="toggleTabletMenu('indicators', event)">
-            <span class="tool-icon">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="9" width="3" height="6" rx="0.5"/><rect x="6.5" y="5" width="3" height="10" rx="0.5"/><rect x="12" y="1" width="3" height="14" rx="0.5"/></svg>
-            </span>
-            Indicators
-          </div>
-
-          <!-- Time Intervals dropdown -->
-          <div class="tab-dropdown" id="tab-interval-menu" style="min-width:240px">
-            <div class="tab-ti-head">
-              <span>Time Intervals</span>
-              <button class="tab-ti-close" onclick="closeTabletMenus()">✕</button>
-            </div>
-            <div class="tab-ti-body">
-              <div class="tab-ti-section">Minutes</div>
-              <div class="tab-ti-item disabled">1m</div>
-              <div class="tab-ti-item disabled">3m</div>
-              <div class="tab-ti-item disabled">5m</div>
-              <div class="tab-ti-item disabled">15m</div>
-              <div class="tab-ti-item disabled">30m</div>
-              <div class="tab-ti-item disabled">45m</div>
-              <div class="tab-ti-section">Hours</div>
-              <div class="tab-ti-item disabled">1h</div>
-              <div class="tab-ti-item disabled">2h</div>
-              <div class="tab-ti-item disabled">3h</div>
-              <div class="tab-ti-item disabled">4h</div>
-              <div class="tab-ti-section">Days</div>
-              <div class="tab-ti-item selected" data-interval="1D" onclick="setTabletInterval('1D','1 Day')">1 Day</div>
-              <div class="tab-ti-section">Weeks</div>
-              <div class="tab-ti-item" data-interval="1W" onclick="setTabletInterval('1W','1 Week')">1 Week</div>
-              <div class="tab-ti-section">Months</div>
-              <div class="tab-ti-item" data-interval="1M" onclick="setTabletInterval('1M','1 Month')">1 Month</div>
-            </div>
-          </div>
-
-          <!-- Chart type dropdown -->
-          <div class="tab-dropdown" id="tab-ctype-menu">
-            <div class="tab-ctype-item" data-type="bars" onclick="setTabletChartType('bars')">
-              <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><line x1="4" y1="2" x2="4" y2="14"/><line x1="4" y1="4" x2="1" y2="4"/><line x1="4" y1="10" x2="7" y2="10"/><line x1="11" y1="2" x2="11" y2="14"/><line x1="11" y1="6" x2="8" y2="6"/><line x1="11" y1="11" x2="14" y2="11"/></svg></span>
-              <span>Bars</span>
-            </div>
-            <div class="tab-ctype-item selected" data-type="candles" onclick="setTabletChartType('candles')">
-              <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16"><line x1="4.5" y1="1" x2="4.5" y2="14" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="3" height="6" rx="0.5" fill="currentColor"/><line x1="11.5" y1="2" x2="11.5" y2="15" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="3" width="3" height="7" rx="0.5" fill="currentColor"/></svg></span>
-              <span>Candles</span>
-            </div>
-            <div class="tab-ctype-item" data-type="hollow" onclick="setTabletChartType('hollow')">
-              <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16"><line x1="4.5" y1="1" x2="4.5" y2="14" stroke="currentColor" stroke-width="1.2"/><rect x="3" y="5" width="3" height="6" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.3"/><line x1="11.5" y1="2" x2="11.5" y2="15" stroke="currentColor" stroke-width="1.2"/><rect x="10" y="3" width="3" height="7" rx="0.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg></span>
-              <span>Hollow candles</span>
-            </div>
-            <div class="tab-ctype-item" data-type="line" onclick="setTabletChartType('line')">
-              <span class="tool-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,11 5,6 8,9 15,2"/></svg></span>
-              <span>Line</span>
-            </div>
-          </div>
-
-          <!-- Indicators dropdown -->
-          <div class="tab-dropdown" id="tab-indicators-menu">
-            <div class="tab-ind-item on" data-ind="volume" onclick="toggleTabletIndicator('volume')">
-              <span>Volume</span><span class="tab-switch"></span>
-            </div>
-            <div class="tab-ind-item" data-ind="ma50" onclick="toggleTabletIndicator('ma50')">
-              <span>MA (50)</span><span class="tab-switch"></span>
-            </div>
-            <div class="tab-ind-item" data-ind="ma200" onclick="toggleTabletIndicator('ma200')">
-              <span>MA (200)</span><span class="tab-switch"></span>
-            </div>
-          </div>
-        </div>
-
         <canvas id="tab-canvas"></canvas>
       </div>
 
-      <!-- Stats grid -->
-      <div class="mob-stats-grid tab-stats-grid">
-        <div class="mob-stat"><div class="mob-stat-label">Day High</div><div class="mob-stat-value" id="tab-s-dayhigh">—</div></div>
-        <div class="mob-stat"><div class="mob-stat-label">Day Low</div><div class="mob-stat-value" id="tab-s-daylow">—</div></div>
-        <div class="mob-stat"><div class="mob-stat-label">52W High</div><div class="mob-stat-value" id="tab-s-52h">—</div></div>
-        <div class="mob-stat"><div class="mob-stat-label">52W Low</div><div class="mob-stat-value" id="tab-s-52l">—</div></div>
-        <div class="mob-stat"><div class="mob-stat-label">vs MA200</div><div class="mob-stat-value" id="tab-s-ma200">—</div></div>
-        <div class="mob-stat"><div class="mob-stat-label">vs MA50</div><div class="mob-stat-value" id="tab-s-ma50">—</div></div>
+      <!-- Quote widget (below chart) -->
+      <div id="tab-quote-widget" style="display:none">
+        <div class="mq-header">
+          <div>
+            <span class="mq-ticker" id="tq-ticker">—</span>
+            <span class="mq-meta" id="tq-meta">—</span>
+          </div>
+          <div class="mq-price-block">
+            <div class="mq-price" id="tq-price">—</div>
+            <div id="tq-chg">—</div>
+          </div>
+        </div>
+        <div class="mq-grid">
+          <div class="mq-cell"><div class="mq-cell-label">O</div><div class="mq-cell-val" id="tq-open">—</div></div>
+          <div class="mq-cell"><div class="mq-cell-label">H</div><div class="mq-cell-val mq-bull" id="tq-high">—</div></div>
+          <div class="mq-cell"><div class="mq-cell-label">L</div><div class="mq-cell-val mq-bear" id="tq-low">—</div></div>
+          <div class="mq-cell"><div class="mq-cell-label">C</div><div class="mq-cell-val" id="tq-close">—</div></div>
+        </div>
+        <div class="mq-grid">
+          <div class="mq-cell"><div class="mq-cell-label">Volume</div><div class="mq-cell-val" id="tq-volume">—</div></div>
+          <div class="mq-cell"><div class="mq-cell-label">Avg Vol</div><div class="mq-cell-val" id="tq-avgvol">—</div></div>
+          <div class="mq-cell"><div class="mq-cell-label">Mkt Cap</div><div class="mq-cell-val" id="tq-mktcap">—</div></div>
+          <div class="mq-cell"><div class="mq-cell-label">P/E</div><div class="mq-cell-val" id="tq-pe">—</div></div>
+        </div>
+        <div class="mq-range-row">
+          <span class="mq-range-label">Day Range</span>
+          <span class="mq-range-val" id="tq-range">—</span>
+        </div>
+        <div class="mq-range-bar">
+          <div class="mq-range-fill" id="tq-range-fill"></div>
+          <div class="mq-range-dot" id="tq-range-dot"></div>
+        </div>
+      </div>
+
+      <!-- Candle Intel -->
+      <div id="tab-candle-intel"></div>
+
+      <!-- Stats row (horizontal chips) -->
+      <div class="tab-stats-row">
+        <div class="tab-stat-chip"><div class="tab-sc-label">Day High</div><div class="tab-sc-val" id="tab-s-dayhigh">—</div></div>
+        <div class="tab-stat-chip"><div class="tab-sc-label">Day Low</div><div class="tab-sc-val" id="tab-s-daylow">—</div></div>
+        <div class="tab-stat-chip"><div class="tab-sc-label">Open</div><div class="tab-sc-val" id="tab-s-open">—</div></div>
+        <div class="tab-stat-chip"><div class="tab-sc-label">Prev Close</div><div class="tab-sc-val" id="tab-s-prevclose">—</div></div>
+        <div class="tab-stat-chip"><div class="tab-sc-label">52W High</div><div class="tab-sc-val" id="tab-s-52h">—</div></div>
+        <div class="tab-stat-chip"><div class="tab-sc-label">52W Low</div><div class="tab-sc-val" id="tab-s-52l">—</div></div>
+        <div class="tab-stat-chip"><div class="tab-sc-label">VS MA200</div><div class="tab-sc-val" id="tab-s-ma200">—</div></div>
+        <div class="tab-stat-chip"><div class="tab-sc-label">VS MA50</div><div class="tab-sc-val" id="tab-s-ma50">—</div></div>
       </div>
 
       <!-- Analysis -->
@@ -2028,7 +2162,10 @@
 
     <!-- Recent Searches sidebar -->
     <div class="tab-sidebar">
-      <div class="tab-section-title">Recent Searches</div>
+      <div class="tab-sidebar-head">
+        <div class="tab-section-title">Recent Searches</div>
+        <button class="tab-wl-btn" id="tab-wl-btn" onclick="toggleTabletWatchlist()">☆ Watchlist</button>
+      </div>
       <div id="tab-history-list"><div class="mob-empty">No saved analyses yet.</div></div>
     </div>
   </div>
@@ -3702,6 +3839,10 @@ let tabletChartType = "candles";
 let tabletInterval  = "1D";
 let tabletHoverIdx  = null;
 let tabletIndicators = { volume: true, ma50: false, ma200: false };
+let tabSL = null, tabTP = null;
+let tabletWatchlistMode = false;
+let tabletHistoryCache = [];
+let tabletWatchlistCache = [];
 
 const TAB_CTYPE_ICONS = {
   bars:    '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><line x1="4" y1="2" x2="4" y2="14"/><line x1="4" y1="4" x2="1" y2="4"/><line x1="4" y1="10" x2="7" y2="10"/><line x1="11" y1="2" x2="11" y2="14"/><line x1="11" y1="6" x2="8" y2="6"/><line x1="11" y1="11" x2="14" y2="11"/></svg>',
@@ -3778,6 +3919,137 @@ function toggleTabletIndicator(name) {
   tabletIndicators[name] = !tabletIndicators[name];
   document.querySelector(`.tab-ind-item[data-ind="${name}"]`).classList.toggle("on", tabletIndicators[name]);
   renderTabletCanvas();
+}
+
+// ── SL / TP bar ──
+function updateTabletSlTp() {
+  const bar = document.getElementById("tab-sl-tp-bar");
+  if (!bar) return;
+  if (!tabSL && !tabTP) { bar.style.display = "none"; return; }
+  bar.style.display = "flex";
+  const price = currentPriceMeta?.current_price;
+  const slEl  = document.getElementById("tab-sl-badge");
+  const tpEl  = document.getElementById("tab-tp-badge");
+  const rrEl  = document.getElementById("tab-rr-badge");
+  if (tabSL && slEl) {
+    const pct = price ? (((tabSL - price) / price) * 100).toFixed(1) : null;
+    slEl.innerHTML = `<span>SL $${tabSL.toFixed(2)}</span><span>${pct ? pct + "%" : ""}</span>`;
+  }
+  if (tabTP && tpEl) {
+    const pct = price ? (((tabTP - price) / price) * 100).toFixed(1) : null;
+    tpEl.innerHTML = `<span>TP $${tabTP.toFixed(2)}</span><span>${pct ? "+" + pct + "%" : ""}</span>`;
+  }
+  if (rrEl && tabSL && tabTP && price) {
+    const risk   = Math.abs(price - tabSL);
+    const reward = Math.abs(tabTP - price);
+    const rr = risk > 0 ? (reward / risk).toFixed(1) : "—";
+    rrEl.innerHTML = `R:R<br>1:${rr}`;
+  }
+}
+function setTabletSlTpFromText(text) {
+  const setup = extract(text, "TRADE SETUP");
+  if (!setup) return;
+  const sl = _firstPrice(_parseStop(setup));
+  const tgt = _firstPrice((setup.match(/Target[:\s]+([^\n]+)/i) || [])[1]);
+  tabSL = sl; tabTP = tgt;
+  updateTabletSlTp();
+  renderTabletCanvas();
+}
+
+// ── Quote widget ──
+function renderTabletQuoteWidget(data) {
+  const w = document.getElementById("tab-quote-widget");
+  if (!w || data.current_price == null) return;
+  const last = data.last_30_candles?.[data.last_30_candles.length - 1];
+  if (!last) return;
+
+  const fmtCap = v => {
+    if (!v) return "—";
+    if (v >= 1e12) return "$" + (v / 1e12).toFixed(1) + "T";
+    if (v >= 1e9)  return "$" + (v / 1e9).toFixed(1) + "B";
+    if (v >= 1e6)  return "$" + (v / 1e6).toFixed(1) + "M";
+    return "$" + v;
+  };
+  const fmtVol = v => {
+    if (!v) return "—";
+    if (v >= 1e9) return (v / 1e9).toFixed(1) + "B";
+    if (v >= 1e6) return (v / 1e6).toFixed(1) + "M";
+    if (v >= 1e3) return (v / 1e3).toFixed(0) + "K";
+    return v;
+  };
+
+  const chg  = data.daily_change_pct;
+  const pos  = chg >= 0;
+  const exchDate = [data.exchange, data.last_date].filter(Boolean).join(" · ");
+  document.getElementById("tq-ticker").textContent = data.ticker || "—";
+  document.getElementById("tq-meta").textContent   = exchDate;
+  document.getElementById("tq-price").textContent  = `$${data.current_price}`;
+  const chgEl = document.getElementById("tq-chg");
+  if (chgEl) {
+    chgEl.textContent = `${pos ? "+" : ""}$${Math.abs(data.current_price * chg / 100).toFixed(2)} (${pos ? "+" : ""}${chg}%)`;
+    chgEl.className = "mq-change " + (pos ? "mq-pos" : "mq-neg");
+  }
+  const todO = data.today_open ?? last.open;
+  const todH = data.today_high ?? last.high;
+  const todL = data.today_low  ?? last.low;
+  const todC = data.current_price;
+  document.getElementById("tq-open").textContent  = `$${todO}`;
+  document.getElementById("tq-high").textContent  = `$${todH}`;
+  document.getElementById("tq-low").textContent   = `$${todL}`;
+  document.getElementById("tq-close").textContent = `$${todC}`;
+  document.getElementById("tq-volume").textContent  = fmtVol(last.volume);
+  document.getElementById("tq-avgvol").textContent  = fmtVol(data.avg_volume);
+  document.getElementById("tq-mktcap").textContent  = fmtCap(data.market_cap);
+  document.getElementById("tq-pe").textContent      = data.pe_ratio ? data.pe_ratio.toFixed(1) : "—";
+  const rangeEl = document.getElementById("tq-range");
+  if (rangeEl) rangeEl.textContent = `$${todL} — $${todH}`;
+  const rng = todH - todL;
+  const pct = rng > 0 ? Math.max(0, Math.min(1, (todC - todL) / rng)) : 0.5;
+  const fill = document.getElementById("tq-range-fill");
+  const dot  = document.getElementById("tq-range-dot");
+  if (fill) fill.style.width = (pct * 100) + "%";
+  if (dot)  dot.style.left   = (pct * 100) + "%";
+  w.style.display = "block";
+}
+
+// ── Candle Intel for tablet ──
+function updateTabletCandleIntel(idx) {
+  const panel = document.getElementById("tab-candle-intel");
+  if (!panel) return;
+  const data = getTabletData();
+  if (idx === null || !data) { panel.style.display = "none"; return; }
+  const intel = analyzeCandleIntel(data, idx);
+  if (!intel) { panel.style.display = "none"; return; }
+  const sigArrow = intel.signal==="bullish"?"↑":intel.signal==="bearish"?"↓":"↔";
+  const sigCls   = intel.signal==="bullish"?"ci-signal-bull":intel.signal==="bearish"?"ci-signal-bear":"ci-signal-neutral";
+  const sigLabel = intel.signal==="bullish"?"BULLISH":intel.signal==="bearish"?"BEARISH":"NEUTRAL";
+  const ctrlIcon = intel.control==="buyers"?"🟢":intel.control==="sellers"?"🔴":"⚪";
+  const ctrlLbl  = intel.control==="buyers"?"Buyers in control":intel.control==="sellers"?"Sellers in control":"Contested";
+  const whoIcon  = intel.who==="institutional"?"🏦":intel.who==="retail"?"👥":"〰️";
+  const whoLbl   = intel.who==="institutional"?"Smart Money":intel.who==="retail"?"Retail Crowd":"Mixed Activity";
+  const volBadge = intel.isHighVol?'<span class="ci-chip" style="background:rgba(88,166,255,.1);color:#58a6ff;border-color:rgba(88,166,255,.3)">⚡ High Vol</span>':"";
+  const sr = detectSR(data, currentPriceMeta);
+  const srChip = (isRes, label) => {
+    const m = label.match(/^(.+?)\s+(\$[\d.]+)$/);
+    const name = m ? m[1] : label; const price = m ? m[2] : "";
+    const cls = isRes ? "sellers" : "buyers"; const icon = isRes ? "⚡" : "🛡️";
+    const prefix = isRes ? "Resistance" : "Support";
+    return `<div class="ci-sr-chip ${cls}"><span>${icon} ${prefix}: ${name}</span><span class="ci-sr-price">${price}</span></div>`;
+  };
+  const srHtml = [...sr.resistance.map(r => srChip(true, r)), ...sr.support.map(s => srChip(false, s))].join("");
+  panel.innerHTML = `
+    <div class="ci-row" style="justify-content:space-between;margin-bottom:6px">
+      <span class="ci-pattern">🕯️ ${intel.pattern}</span>
+      <span class="${sigCls}">${sigArrow} ${sigLabel}</span>
+    </div>
+    <div class="ci-row">
+      <span class="ci-chip ${intel.control}">${ctrlIcon} ${ctrlLbl}</span>
+      <span class="ci-chip ${intel.who}">${whoIcon} ${whoLbl}</span>
+      ${volBadge}
+    </div>
+    ${srHtml ? `<div class="ci-sr-list">${srHtml}</div>` : ""}
+    <div class="ci-msg">${intel.msg}</div>`;
+  panel.style.display = "block";
 }
 
 // ── Canvas render ──
@@ -3897,6 +4169,22 @@ function renderTabletCanvas() {
   if (tabletIndicators.ma50  && currentPriceMeta?.ma50)  drawMaLine(currentPriceMeta.ma50,  "#d29922", "MA50");
   if (tabletIndicators.ma200 && currentPriceMeta?.ma200) drawMaLine(currentPriceMeta.ma200, "#58a6ff", "MA200");
 
+  // SL / TP dashed lines
+  if (tabSL && tabSL >= pMin && tabSL <= pMax) {
+    const y = pY(tabSL);
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = "rgba(248,81,73,0.7)"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R - 2, y); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = "#f85149"; ctx.font = "10px -apple-system,sans-serif"; ctx.textAlign = "left";
+    ctx.fillText("SL", W - PAD_R + 2, y + 3);
+  }
+  if (tabTP && tabTP >= pMin && tabTP <= pMax) {
+    const y = pY(tabTP);
+    ctx.setLineDash([5, 4]); ctx.strokeStyle = "rgba(63,185,80,0.7)"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R - 2, y); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = "#3fb950"; ctx.font = "10px -apple-system,sans-serif"; ctx.textAlign = "left";
+    ctx.fillText("TP", W - PAD_R + 2, y + 3);
+  }
+
   // Date labels
   ctx.fillStyle = "#6e7681"; ctx.font = "10px -apple-system,sans-serif"; ctx.textAlign = "center";
   const step = Math.max(1, Math.ceil(n / 8));
@@ -3936,35 +4224,47 @@ function renderTabletCanvas() {
     return Math.max(0, Math.min(n - 1, Math.round((x - PAD_L) / (rect.width - PAD_L - PAD_R) * n - 0.5)));
   }
   document.addEventListener("mousemove", e => {
-    if (e.target.id === "tab-canvas") { tabletHoverIdx = getTabletIdx(e); renderTabletCanvas(); }
+    if (e.target.id === "tab-canvas") {
+      tabletHoverIdx = getTabletIdx(e); renderTabletCanvas(); updateTabletCandleIntel(tabletHoverIdx);
+    }
   });
   document.addEventListener("mouseleave", e => {
-    if (e.target.id === "tab-canvas" && tabletHoverIdx !== null) { tabletHoverIdx = null; renderTabletCanvas(); }
+    if (e.target.id === "tab-canvas" && tabletHoverIdx !== null) {
+      tabletHoverIdx = null; renderTabletCanvas();
+      // restore last-candle intel on mouse leave
+      const d = getTabletData();
+      if (d) updateTabletCandleIntel(d.length - 1);
+    }
   }, true);
 })();
 
 // ── Stats ──
 function updateTabletStats(data) {
   const last = data.last_30_candles[data.last_30_candles.length - 1];
-  document.getElementById("tab-s-dayhigh").textContent = `$${last.high}`;
-  document.getElementById("tab-s-daylow").textContent  = `$${last.low}`;
-  document.getElementById("tab-s-52h").textContent = `$${data["52w_high"]}`;
-  document.getElementById("tab-s-52l").textContent = `$${data["52w_low"]}`;
+  const todH = data.today_high ?? last.high;
+  const todL = data.today_low  ?? last.low;
+  const todO = data.today_open ?? last.open;
+  document.getElementById("tab-s-dayhigh").textContent  = `$${todH}`;
+  document.getElementById("tab-s-daylow").textContent   = `$${todL}`;
+  document.getElementById("tab-s-open").textContent     = `$${todO}`;
+  document.getElementById("tab-s-52h").textContent      = `$${data["52w_high"]}`;
+  document.getElementById("tab-s-52l").textContent      = `$${data["52w_low"]}`;
 
+  const prevCloseEl = document.getElementById("tab-s-prevclose");
+  if (prevCloseEl && data.last_30_candles.length > 1) {
+    prevCloseEl.textContent = `$${data.last_30_candles[data.last_30_candles.length - 2].close}`;
+  }
   const ma200 = document.getElementById("tab-s-ma200");
   ma200.textContent = data.price_vs_ma200 === "above" ? "▲ Above" : "▼ Below";
-  ma200.className   = "mob-stat-value " + (data.price_vs_ma200 === "above" ? "bullish" : "bearish");
-
+  ma200.className   = "tab-sc-val " + (data.price_vs_ma200 === "above" ? "mob-pos" : "mob-neg");
   const ma50 = document.getElementById("tab-s-ma50");
   ma50.textContent = data.price_vs_ma50 === "above" ? "▲ Above" : "▼ Below";
-  ma50.className   = "mob-stat-value " + (data.price_vs_ma50 === "above" ? "bullish" : "bearish");
+  ma50.className   = "tab-sc-val " + (data.price_vs_ma50 === "above" ? "mob-pos" : "mob-neg");
 
-  document.getElementById("tab-price-block").style.display = "block";
-  document.getElementById("tab-price").textContent = `$${data.current_price}`;
-  const chg = data.daily_change_pct;
-  const chgEl = document.getElementById("tab-change");
-  chgEl.textContent = `${chg >= 0 ? "+" : ""}$${Math.abs((data.current_price * chg / 100)).toFixed(2)} (${chg >= 0 ? "+" : ""}${chg}%)`;
-  chgEl.className = "tab-change " + (chg >= 0 ? "mob-pos" : "mob-neg");
+  renderTabletQuoteWidget(data);
+  // Show last-candle intel by default
+  const d = getTabletData();
+  if (d) updateTabletCandleIntel(d.length - 1);
 }
 
 // ── Price fetch (initial / history) ──
@@ -3980,11 +4280,30 @@ async function fetchTabletPrice(ticker) {
     tabletPriceData = data.last_30_candles;
     document.getElementById("tab-subtitle").textContent = ticker;
     updateTabletStats(data);
+    updateTabletSlTp();
     renderTabletCanvas();
   } catch (e) { console.warn("tablet price fetch", e); }
 }
 
 // ── Analysis ──
+function buildTabletCards(text) {
+  let html = buildMobCards(text);
+  // Key Insight card — extract first 2 substantive sentences from KEY TAKEAWAYS
+  const takeaways = extract(text, "KEY TAKEAWAYS");
+  if (takeaways) {
+    const sentences = takeaways.replace(/\*+/g, "").replace(/^[-•]\s*/gm, "").trim()
+      .split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 20);
+    const insight = sentences.slice(0, 2).join(" ").trim();
+    if (insight) {
+      html += `<div class="tab-key-insight">
+        <div class="tab-ki-header"><div class="tab-ki-icon">🤖</div><div class="tab-ki-title">Key Insight</div></div>
+        <div class="tab-ki-text">${insight}</div>
+      </div>`;
+    }
+  }
+  return html;
+}
+
 function showTabletAnalysisDone(text) {
   document.getElementById("tab-a-placeholder").style.display = "none";
   document.getElementById("tab-streaming-view").style.display = "none";
@@ -3996,7 +4315,8 @@ function showTabletAnalysisDone(text) {
     vb.className = `verdict-badge verdict-${v.cls}`;
     document.getElementById("tab-verdict-row").style.display = "block";
   }
-  document.getElementById("tab-cards").innerHTML = buildMobCards(text);
+  document.getElementById("tab-cards").innerHTML = buildTabletCards(text);
+  setTabletSlTpFromText(text);
 }
 
 // Default-on-open: show the last saved analysis, flagged with today's date.
@@ -4038,24 +4358,64 @@ function runTabletAnalysis() {
 // ── Recent Searches sidebar ──
 async function loadTabletHistory() {
   try {
-    const res = await fetch(`${API_BASE}/history`);
-    renderTabletHistory(await res.json());
+    const [histRes, wlRes] = await Promise.all([
+      fetch(`${API_BASE}/history`),
+      fetch(`${API_BASE}/watchlist`),
+    ]);
+    tabletHistoryCache  = await histRes.json();
+    tabletWatchlistCache = await wlRes.json();
+    watchlistCache = tabletWatchlistCache;
+    _updateTabletWlBtn();
+    renderTabletHistory(tabletWatchlistMode
+      ? tabletHistoryCache.filter(i => tabletWatchlistCache.some(w => w.ticker === i.ticker))
+      : tabletHistoryCache);
   } catch {
     document.getElementById("tab-history-list").innerHTML = '<div class="mob-empty">Error loading history.</div>';
   }
 }
+function _updateTabletWlBtn() {
+  const btn = document.getElementById("tab-wl-btn");
+  if (!btn) return;
+  const count = tabletWatchlistCache.length;
+  btn.textContent = tabletWatchlistMode ? `★ Watchlist (${count})` : `☆ Watchlist (${count})`;
+  btn.classList.toggle("active", tabletWatchlistMode);
+}
+function toggleTabletWatchlist() {
+  tabletWatchlistMode = !tabletWatchlistMode;
+  _updateTabletWlBtn();
+  renderTabletHistory(tabletWatchlistMode
+    ? tabletHistoryCache.filter(i => tabletWatchlistCache.some(w => w.ticker === i.ticker))
+    : tabletHistoryCache);
+}
 function renderTabletHistory(items) {
   const list = document.getElementById("tab-history-list");
-  if (!items.length) { list.innerHTML = '<div class="mob-empty">No saved analyses yet.</div>'; return; }
+  if (!items.length) { list.innerHTML = '<div class="mob-empty">No results found.</div>'; return; }
+  const wlMap = {};
+  tabletWatchlistCache.forEach(w => { wlMap[w.ticker] = w; });
   list.innerHTML = items.map(item => {
     const chg = item.daily_change;
     const pos = chg === null || chg >= 0;
     const pct = chg !== null ? `${pos ? "+" : ""}${chg.toFixed(2)}%` : "—";
     const usd = item.price && chg !== null ? `${pos ? "+" : ""}$${Math.abs(chg).toFixed(2)}` : "";
+    const wl  = wlMap[item.ticker];
+    const isWatched = !!wl;
+    const sltp = wl && (wl.stop_loss || wl.target) ? `
+      <div class="tab-hi-sltp">
+        <div class="tab-hi-sl">SL ${wl.stop_loss ? "$" + wl.stop_loss : "—"}</div>
+        <div class="tab-hi-tp">TP ${wl.target ? "$" + wl.target : "—"}</div>
+      </div>` : "";
     return `<div class="mob-hitem" onclick="loadTabletFromHistory(${item.id},'${item.ticker}')">
-      <div class="mob-hitem-left">
-        <div class="mob-hitem-ticker">${item.ticker}</div>
+      <div class="mob-hitem-left" style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:5px">
+          <button class="tab-hi-star${isWatched ? " starred" : ""}"
+            onclick="event.stopPropagation(); toggleTabletHistoryStar('${item.ticker}', this)"
+            title="${isWatched ? "Remove from watchlist" : "Add to watchlist"}">
+            ${isWatched ? "★" : "☆"}
+          </button>
+          <div class="mob-hitem-ticker">${item.ticker}</div>
+        </div>
         <div class="mob-hitem-date">${item.searched_at}</div>
+        ${sltp}
       </div>
       <div class="mob-hitem-right">
         <div class="mob-hitem-pct ${pos ? "mob-pos" : "mob-neg"}">${pct}</div>
@@ -4063,6 +4423,25 @@ function renderTabletHistory(items) {
       </div>
     </div>`;
   }).join("");
+}
+async function toggleTabletHistoryStar(ticker, btn) {
+  const wl = tabletWatchlistCache.find(w => w.ticker === ticker);
+  if (wl) {
+    await fetch(`${API_BASE}/watchlist/${wl.id}`, { method: "DELETE" });
+    tabletWatchlistCache = tabletWatchlistCache.filter(w => w.id !== wl.id);
+    watchlistCache = tabletWatchlistCache;
+    btn.classList.remove("starred"); btn.textContent = "☆";
+  } else {
+    const res = await fetch(`${API_BASE}/watchlist`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticker }),
+    });
+    const newItem = await res.json();
+    tabletWatchlistCache = [...tabletWatchlistCache, { id: newItem.id, ticker }];
+    watchlistCache = tabletWatchlistCache;
+    btn.classList.add("starred"); btn.textContent = "★";
+  }
+  _updateTabletWlBtn();
 }
 async function loadTabletFromHistory(id, ticker) {
   try {
@@ -4231,7 +4610,7 @@ function buildMobCards(text) {
     }
 
     if (planSections) {
-      html += `<div class="mob-trade-plan"><div class="mob-tp-header">⚡ Trade Plan</div>${planSections}</div>`;
+      html += `<div class="mob-trade-plan"><div class="mob-tp-header">⚡ Trade Plan</div><div class="mob-tp-sections">${planSections}</div></div>`;
 
       // Position sizing — risk 1% of account between entry and stop
       const entryNum = _firstPrice(entry);
