@@ -885,6 +885,16 @@
   }
   .mob-bs-item:active, .mob-bs-item.active { background:rgba(255,255,255,0.08); }
   .mob-bs-item .check { color:#3fb950; font-size:16px; }
+  .mob-bs-switch {
+    position:relative; width:34px; height:19px; border-radius:999px;
+    background:rgba(255,255,255,0.12); flex-shrink:0; transition:background .15s;
+  }
+  .mob-bs-switch::after {
+    content:''; position:absolute; top:2px; left:2px; width:15px; height:15px;
+    background:#94a3b8; border-radius:50%; transition:transform .15s,background .15s;
+  }
+  .mob-bs-switch.on { background:rgba(63,185,80,0.35); }
+  .mob-bs-switch.on::after { transform:translateX(15px); background:#3fb950; }
   #mob-canvas { flex:1; width:100%; display:block; min-height:0; }
 
   /* Stats grid */
@@ -1839,6 +1849,23 @@
       </button>
       <button class="mob-bs-item" id="mob-bsc-hollow" onclick="setMobChartType('hollow')">
         <span>Hollow Candles</span><span class="check" id="mob-bsc-check-hollow" style="display:none">✓</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Indicators bottom sheet -->
+  <div class="mob-bs-panel" id="mob-bs-indicators" style="display:none">
+    <div class="mob-bs-handle"></div>
+    <div class="mob-bs-title">Indicators</div>
+    <div class="mob-bs-list">
+      <button class="mob-bs-item" onclick="toggleMobIndicator('volume')">
+        <span>Volume</span><span class="mob-bs-switch on" id="mob-bsind-volume"></span>
+      </button>
+      <button class="mob-bs-item" onclick="toggleMobIndicator('ma50')">
+        <span>MA (50)</span><span class="mob-bs-switch" id="mob-bsind-ma50"></span>
+      </button>
+      <button class="mob-bs-item" onclick="toggleMobIndicator('ma200')">
+        <span>MA (200)</span><span class="mob-bs-switch" id="mob-bsind-ma200"></span>
       </button>
     </div>
   </div>
@@ -3027,6 +3054,7 @@ function _firstPrice(str) {
 let mobPriceData = null;
 let mobChartType = "candles";
 let mobInterval  = "1D";
+let mobIndicators = { volume: true, ma50: false, ma200: false };
 let mobTouchIdx  = null;
 let mobSL = null, mobTP = null;
 
@@ -3089,7 +3117,7 @@ async function fetchMobPrice(ticker) {
 let _mobSheet = null;
 function openMobSheet(name) {
   closeMobSheet();
-  const ids = { interval: "mob-bs-interval", ctype: "mob-bs-ctype" };
+  const ids = { interval: "mob-bs-interval", ctype: "mob-bs-ctype", indicators: "mob-bs-indicators" };
   if (!ids[name]) return;
   _mobSheet = name;
   document.getElementById("mob-bs-overlay").style.display = "block";
@@ -3099,7 +3127,7 @@ function openMobSheet(name) {
 }
 function closeMobSheet() {
   if (!_mobSheet) return;
-  const ids = { interval: "mob-bs-interval", ctype: "mob-bs-ctype" };
+  const ids = { interval: "mob-bs-interval", ctype: "mob-bs-ctype", indicators: "mob-bs-indicators" };
   const panel = document.getElementById(ids[_mobSheet]);
   if (panel) { panel.classList.remove("open"); setTimeout(() => { panel.style.display = "none"; }, 220); }
   document.getElementById("mob-bs-overlay").style.display = "none";
@@ -3130,6 +3158,13 @@ function setMobChartType(type) {
     if (el) el.style.display = v === type ? "inline" : "none";
   });
   closeMobSheet();
+  renderMobCanvas();
+}
+
+function toggleMobIndicator(name) {
+  mobIndicators[name] = !mobIndicators[name];
+  const sw = document.getElementById(`mob-bsind-${name}`);
+  if (sw) sw.classList.toggle("on", mobIndicators[name]);
   renderMobCanvas();
 }
 
@@ -3428,10 +3463,11 @@ function renderMobCanvas() {
   }
 
   const n = data.length;
-  const PAD_T = 12, PAD_R = 54, PAD_B = 52, PAD_L = 6;
-  const VOL_H = 36;
+  const showVol = mobIndicators.volume;
+  const PAD_T = 12, PAD_R = 54, PAD_B = 60, PAD_L = 6;
+  const VOL_H = showVol ? 36 : 0;
   const CHART_H = H - PAD_T - PAD_B;
-  const PRICE_H = CHART_H - VOL_H - 6;
+  const PRICE_H = CHART_H - (showVol ? VOL_H + 6 : 0);
 
   const maxP = Math.max(...data.map(d => d.high));
   const minP = Math.min(...data.map(d => d.low));
@@ -3456,12 +3492,14 @@ function renderMobCanvas() {
     ctx.fillText("$" + p.toFixed(0), W - PAD_R + 4, y + 4);
   }
 
-  // Volume bars
-  data.forEach((d, i) => {
-    ctx.fillStyle = d.close >= d.open ? "rgba(63,185,80,0.35)" : "rgba(248,81,73,0.35)";
-    const bh = (1 - d.volume / maxVol) * VOL_H;
-    ctx.fillRect(xOf(i) - barW * 0.4, H - PAD_B + 6 + bh, barW * 0.8, VOL_H - bh);
-  });
+  // Volume bars (optional)
+  if (showVol) {
+    data.forEach((d, i) => {
+      ctx.fillStyle = d.close >= d.open ? "rgba(63,185,80,0.35)" : "rgba(248,81,73,0.35)";
+      const bh = (1 - d.volume / maxVol) * VOL_H;
+      ctx.fillRect(xOf(i) - barW * 0.4, H - PAD_B + 6 + bh, barW * 0.8, VOL_H - bh);
+    });
+  }
 
   // Price chart
   if (mobChartType === "line") {
@@ -3509,11 +3547,24 @@ function renderMobCanvas() {
     });
   }
 
-  // Date labels
+  // MA overlay lines
+  function drawMobMaLine(price, color, label) {
+    if (!price || price < pMin || price > pMax) return;
+    const y = pY(price);
+    ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(PAD_L, y); ctx.lineTo(W - PAD_R, y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = color; ctx.font = "9px -apple-system,sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(label, PAD_L + 4, y - 3);
+  }
+  if (mobIndicators.ma50  && currentPriceMeta?.ma50)  drawMobMaLine(currentPriceMeta.ma50,  "#d29922", "MA50");
+  if (mobIndicators.ma200 && currentPriceMeta?.ma200) drawMobMaLine(currentPriceMeta.ma200, "#58a6ff", "MA200");
+
+  // Date labels — fixed Y relative to canvas bottom so they're always visible
   ctx.fillStyle = "#6e7681"; ctx.font = "10px -apple-system,sans-serif"; ctx.textAlign = "center";
   const step = Math.ceil(n / 6);
   for (let i = 0; i < n; i += step) {
-    ctx.fillText(data[i].date.slice(5).replace("-","/"), xOf(i), H - PAD_B + 8 + VOL_H + 10);
+    ctx.fillText(data[i].date.slice(5).replace("-","/"), xOf(i), H - PAD_B + (showVol ? VOL_H + 18 : 14));
   }
 
   // S/R lines on canvas
