@@ -897,11 +897,12 @@
   .mob-bs-switch.on::after { transform:translateX(15px); background:#3fb950; }
   #mob-canvas { flex:1; width:100%; display:block; min-height:0; }
 
-  /* Stats grid */
-  .mob-stats-grid { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
-  .mob-stat { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:12px; padding:12px 13px; }
-  .mob-stat-label { color:#6e7681; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
-  .mob-stat-value { color:#e6edf3; font-size:16px; font-weight:700; }
+  /* Stats row — horizontal scroll chips */
+  .mob-stats-grid { display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; padding:0 16px 2px; margin:0 -16px; }
+  .mob-stats-grid::-webkit-scrollbar { display:none; }
+  .mob-stat { flex-shrink:0; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:8px 13px; }
+  .mob-stat-label { color:#8b949e; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.4px; margin-bottom:3px; }
+  .mob-stat-value { color:#e6edf3; font-size:13px; font-weight:700; }
   .mob-stat-value.bullish { color:#3fb950; } .mob-stat-value.bearish { color:#f85149; }
 
   /* Analysis tab */
@@ -1833,14 +1834,17 @@
     </div>
     <div id="mob-candle-intel"></div>
     <div class="mob-stats-grid" id="mob-stats-grid" style="display:none">
-      <div class="mob-stat"><div class="mob-stat-label">Price</div><div class="mob-stat-value" id="mob-s-price">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">Day High</div><div class="mob-stat-value" id="mob-s-dayhigh">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">Day Low</div><div class="mob-stat-value" id="mob-s-daylow">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">Open</div><div class="mob-stat-value" id="mob-s-open">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">Prev Close</div><div class="mob-stat-value" id="mob-s-prevclose">—</div></div>
       <div class="mob-stat"><div class="mob-stat-label">52W High</div><div class="mob-stat-value" id="mob-s-52h">—</div></div>
       <div class="mob-stat"><div class="mob-stat-label">52W Low</div><div class="mob-stat-value" id="mob-s-52l">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">VS MA200</div><div class="mob-stat-value" id="mob-s-ma200">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">VS MA50</div><div class="mob-stat-value" id="mob-s-ma50">—</div></div>
       <div class="mob-stat"><div class="mob-stat-label">Volume</div><div class="mob-stat-value" id="mob-s-vol">—</div></div>
-      <div class="mob-stat"><div class="mob-stat-label">vs MA200</div><div class="mob-stat-value" id="mob-s-ma200">—</div></div>
-      <div class="mob-stat"><div class="mob-stat-label">vs MA50</div><div class="mob-stat-value" id="mob-s-ma50">—</div></div>
-      <div class="mob-stat"><div class="mob-stat-label">Float</div><div class="mob-stat-value" id="mob-s-float">—</div></div>
       <div class="mob-stat"><div class="mob-stat-label">Avg Vol (3M)</div><div class="mob-stat-value" id="mob-s-avgvol">—</div></div>
+      <div class="mob-stat"><div class="mob-stat-label">Float</div><div class="mob-stat-value" id="mob-s-float">—</div></div>
     </div>
   </div>
 
@@ -4531,19 +4535,25 @@ function updateMobStats(data) {
   const chgEl = document.getElementById("mob-change-tag");
   chgEl.textContent = `${chg >= 0 ? "+" : ""}$${Math.abs((data.current_price * chg / 100)).toFixed(2)} (${chg >= 0 ? "+" : ""}${chg}%)`;
   chgEl.className = "mob-change " + (chg >= 0 ? "mob-pos" : "mob-neg");
-  document.getElementById("mob-stats-grid").style.display = "grid";
-  document.getElementById("mob-s-price").textContent = `$${data.current_price}`;
-  document.getElementById("mob-s-52h").textContent   = `$${data["52w_high"]}`;
-  document.getElementById("mob-s-52l").textContent   = `$${data["52w_low"]}`;
-  document.getElementById("mob-s-vol").textContent   = data.volume_ratio;
+  document.getElementById("mob-stats-grid").style.display = "flex";
+  const last = (data.last_30_candles || [])[( data.last_30_candles || []).length - 1] || {};
+  document.getElementById("mob-s-dayhigh").textContent  = `$${data.today_high  ?? last.high  ?? "—"}`;
+  document.getElementById("mob-s-daylow").textContent   = `$${data.today_low   ?? last.low   ?? "—"}`;
+  document.getElementById("mob-s-open").textContent     = `$${data.today_open  ?? last.open  ?? "—"}`;
+  const prevClose = (data.last_30_candles || []).length > 1
+    ? data.last_30_candles[data.last_30_candles.length - 2].close : null;
+  document.getElementById("mob-s-prevclose").textContent = prevClose ? `$${prevClose}` : "—";
+  document.getElementById("mob-s-52h").textContent      = `$${data["52w_high"]}`;
+  document.getElementById("mob-s-52l").textContent      = `$${data["52w_low"]}`;
   const ma200 = document.getElementById("mob-s-ma200");
-  ma200.textContent  = data.price_vs_ma200 === "above" ? "▲ Above" : "▼ Below";
-  ma200.className    = "mob-stat-value " + (data.price_vs_ma200 === "above" ? "bullish" : "bearish");
+  ma200.textContent = data.price_vs_ma200 === "above" ? "▲ Above" : "▼ Below";
+  ma200.className   = "mob-stat-value " + (data.price_vs_ma200 === "above" ? "bullish" : "bearish");
   const ma50 = document.getElementById("mob-s-ma50");
-  ma50.textContent   = data.price_vs_ma50 === "above" ? "▲ Above" : "▼ Below";
-  ma50.className     = "mob-stat-value " + (data.price_vs_ma50 === "above" ? "bullish" : "bearish");
-  document.getElementById("mob-s-float").textContent  = formatBig(data.float_shares);
-  document.getElementById("mob-s-avgvol").textContent = formatBig(data.avg_3m_volume);
+  ma50.textContent  = data.price_vs_ma50 === "above" ? "▲ Above" : "▼ Below";
+  ma50.className    = "mob-stat-value " + (data.price_vs_ma50 === "above" ? "bullish" : "bearish");
+  document.getElementById("mob-s-vol").textContent      = data.volume_ratio;
+  document.getElementById("mob-s-avgvol").textContent   = formatBig(data.avg_3m_volume);
+  document.getElementById("mob-s-float").textContent    = formatBig(data.float_shares);
 }
 
 const MOB_SECTIONS = [
