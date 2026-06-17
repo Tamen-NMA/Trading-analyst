@@ -4741,14 +4741,14 @@ function renderMobHistory(items) {
     const isWatched = watchedTickers.has(item.ticker);
     return `<div class="mob-hitem" onclick="loadMobFromHistory(${item.id},'${item.ticker}')">
       <div class="mob-hitem-left">
-        <div class="mob-hitem-ticker">${item.ticker}</div>
+        <div class="mob-hitem-ticker">
+          <button class="mob-hitem-star${isWatched ? " starred" : ""}"
+            onclick="event.stopPropagation(); toggleMobHistoryStar('${item.ticker}', this)"
+            title="${isWatched ? "Remove from watchlist" : "Add to watchlist"}"
+            style="vertical-align:middle;margin-right:5px;padding:0;font-size:16px">${isWatched ? "★" : "☆"}</button>${item.ticker}
+        </div>
         <div class="mob-hitem-date">${item.searched_at}</div>
       </div>
-      <button class="mob-hitem-star${isWatched ? " starred" : ""}"
-        onclick="event.stopPropagation(); toggleMobHistoryStar('${item.ticker}', this)"
-        title="${isWatched ? "Remove from watchlist" : "Add to watchlist"}">
-        ${isWatched ? "★" : "☆"}
-      </button>
       <div class="mob-hitem-right">
         <div class="mob-hitem-pct ${pos ? "mob-pos" : "mob-neg"}">${pct}</div>
         <div class="mob-hitem-chg ${pos ? "mob-pos" : "mob-neg"}">${usd}</div>
