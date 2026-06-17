@@ -884,6 +884,8 @@
     font-size:14px; cursor:pointer; transition:background .12s;
   }
   .mob-bs-item:active, .mob-bs-item.active { background:rgba(255,255,255,0.08); }
+  .mob-bs-item.disabled { color:#475569; cursor:not-allowed; pointer-events:none; }
+  .mob-bs-section { padding:6px 14px 2px; font-size:10px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; color:#8b949e; }
   .mob-bs-item .check { color:#3fb950; font-size:16px; }
   .mob-bs-switch {
     position:relative; width:34px; height:19px; border-radius:999px;
@@ -1934,12 +1936,27 @@
     <div class="mob-bs-handle"></div>
     <div class="mob-bs-title">Time Interval</div>
     <div class="mob-bs-list">
+      <div class="mob-bs-section">Minutes</div>
+      <button class="mob-bs-item disabled"><span>1m</span></button>
+      <button class="mob-bs-item disabled"><span>3m</span></button>
+      <button class="mob-bs-item disabled"><span>5m</span></button>
+      <button class="mob-bs-item disabled"><span>15m</span></button>
+      <button class="mob-bs-item disabled"><span>30m</span></button>
+      <button class="mob-bs-item disabled"><span>45m</span></button>
+      <div class="mob-bs-section">Hours</div>
+      <button class="mob-bs-item disabled"><span>1h</span></button>
+      <button class="mob-bs-item disabled"><span>2h</span></button>
+      <button class="mob-bs-item disabled"><span>3h</span></button>
+      <button class="mob-bs-item disabled"><span>4h</span></button>
+      <div class="mob-bs-section">Days</div>
       <button class="mob-bs-item active" id="mob-bsi-1D" onclick="setMobInterval('1D')">
         <span>1 Day</span><span class="check" id="mob-bsi-check-1D">✓</span>
       </button>
+      <div class="mob-bs-section">Weeks</div>
       <button class="mob-bs-item" id="mob-bsi-1W" onclick="setMobInterval('1W')">
         <span>1 Week</span><span class="check" id="mob-bsi-check-1W" style="display:none">✓</span>
       </button>
+      <div class="mob-bs-section">Months</div>
       <button class="mob-bs-item" id="mob-bsi-1M" onclick="setMobInterval('1M')">
         <span>1 Month</span><span class="check" id="mob-bsi-check-1M" style="display:none">✓</span>
       </button>
